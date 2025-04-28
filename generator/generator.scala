@@ -1,5 +1,4 @@
 //> using dep com.lihaoyi::upickle::4.1.0
-//> using dep com.lihaoyi::pprint::0.9.0
 //> using dep com.indoorvivants::rendition::0.0.4
 //> using dep com.lihaoyi::os-lib::0.11.4
 //> using scala 3.7.0-RC4
@@ -37,31 +36,35 @@ object types:
       description: Option[String] = None,
       `enum`: Option[List[String]] = None,
       `type`: "string"
-  ) derives Reader
+  ) derives ReadWriter
+
   case class Arr(
       `type`: "array",
       items: Property,
       description: Option[String] = None
-  ) derives Reader
+  ) derives ReadWriter
+
   case class Num(
       description: Option[String] = None,
       `type`: "number"
-  ) derives Reader
-  case class Integer(`type`: "integer") derives Reader
+  ) derives ReadWriter
+
+  case class Integer(`type`: "integer") derives ReadWriter
+
   case class AdditionalProperties(
       `type`: "object",
       additionalProperties: Boolean
-  ) derives Reader
+  ) derives ReadWriter
+
   case class Obj(
       `type`: "object",
       properties: Map[String, Property] = Map.empty,
       required: List[String] = List.empty,
       description: Option[String] = None
-      // additionalProperties: Option[AdditionalProperties] = None
-  ) derives Reader
-  case class Bool(`type`: "boolean") derives Reader
-  case class Mixed(`type`: List[String]) derives Reader
-  case class Data(description: Option[String] = None) derives Reader
+  ) derives ReadWriter
+  case class Bool(`type`: "boolean") derives ReadWriter
+  case class Mixed(`type`: List[String]) derives ReadWriter
+  case class Data(description: Option[String] = None) derives ReadWriter
 
   lazy val Property = Builder[Str]("str")
     .orElse[Arr]("arr")
@@ -84,34 +87,34 @@ case class EnumDefinition(
     `type`: "string",
     `enum`: Option[List[String]] = None,
     description: Option[String] = None
-) derives Reader
+) derives ReadWriter
 
 case class ObjectDefinition(
     `type`: "object",
     description: Option[String] = None,
     properties: Map[String, Property] = Map.empty,
     required: List[String] = List.empty
-) derives Reader
+) derives ReadWriter
 
 case class MixedTypeDefinition(
     `type`: MixedType,
     description: Option[String] = None
-) derives Reader
+) derives ReadWriter
 
 case class ArrayDefinition(
     `type`: "array",
     description: Option[String] = None,
     items: DefDef
-) derives Reader
+) derives ReadWriter
 
 case class Ref(`$ref`: String, description: Option[String] = None)
-    derives Reader
+    derives ReadWriter
 
-case class AnyOf(anyOf: List[DefDef]) derives Reader
+case class AnyOf(anyOf: List[DefDef]) derives ReadWriter
 
 case class Schema(
     definitions: Map[String, DefDef]
-) derives Reader
+) derives ReadWriter
 
 case class RenderingStreams(flush: (String, LineBuilder) => Unit):
   private val streams = collection.mutable.Map.empty[String, LineBuilder]
@@ -137,6 +140,8 @@ end RenderingStreams
     (name, lb) => os.write.over(base / s"$name.scala", lb.result)
   )
 
+  val x = Property.embed(Num(`type` = "number"))
+
   val toRender = Set(
     "AudioContent",
     "Annotations",
@@ -153,8 +158,11 @@ end RenderingStreams
     "CallToolRequest",
     "CallToolResult",
     "TextContent",
-    "ImageContent", 
-    "AudioContent"
+    "ImageContent",
+    "AudioContent",
+    "EmbeddedResource",
+    "TextResourceContents",
+    "BlobResourceContents"
   )
 
   def scaladoc(s: Option[String])(using RenderingContext) =
@@ -171,8 +179,8 @@ end RenderingStreams
     case s: Bool => "Boolean"
     case a: Arr =>
       s"Seq[${propType(a.items)}]"
-    case AnyOf(cases) => 
-      "Any"
+    case AnyOf(cases) =>
+      s"Any /*$cases*/"
     case o: Obj =>
       if o.properties.isEmpty then "ujson.Value"
       else
@@ -194,11 +202,13 @@ end RenderingStreams
             line("package mcp")
             emptyLine()
             line("import upickle.default.*")
-            line("import upicklex.namedTuples.Macros.Implicits.given")
+            // line("import upicklex.namedTuples.Macros.Implicits.given")
             emptyLine()
             scaladoc(defDef.description)
 
             val anonToBuild = List.newBuilder[(String, Obj)]
+            val unionsToBuild = List.newBuilder[(String, List[Ref])]
+
             block(s"case class $name(", ") derives ReadWriter"):
               val sortedProps = defDef.properties.toList.sortBy:
                 (propName, _) => (!defDef.required.contains(propName), propName)
@@ -221,6 +231,25 @@ end RenderingStreams
                   case r: Ref =>
                     scaladoc(r.description)
                     line(s"$cleanName: ${typeWrap(propType(r))},")
+
+                  case AnyOf(refs) if refs.forall(_.isInstanceOf[Ref]) =>
+                    line(
+                      s"$cleanName: ${typeWrap(s"$name.${propName.capitalize}")},"
+                    )
+                    unionsToBuild += propName.capitalize -> refs.collect {
+                      case r: Ref => r
+                    }
+
+                  case Arr(_, AnyOf(refs), description)
+                      if refs.forall(_.isInstanceOf[Ref]) =>
+                    scaladoc(description)
+                    line(
+                      s"$cleanName: ${typeWrap(s"Seq[$name.${propName.capitalize}]")},"
+                    )
+                    unionsToBuild += propName.capitalize -> refs.collect {
+                      case r: Ref => r
+                    }
+
                   case Arr(_, r @ Ref(_, _), description) =>
                     scaladoc(description)
                     line(
@@ -234,11 +263,11 @@ end RenderingStreams
                         s"$cleanName: ${typeWrap(s"$name.${propName.capitalize}")},"
                       )
                       anonToBuild += propName.capitalize -> o
-                    else 
+                    else
                       line(
                         s"$cleanName: ${typeWrap("ujson.Value")},"
                       )
-
+                    end if
 
                   case other =>
                     line(
@@ -249,7 +278,8 @@ end RenderingStreams
               }
 
             val anons = anonToBuild.result()
-            if anons.nonEmpty then
+            val unions = unionsToBuild.result()
+            if anons.nonEmpty || unions.nonEmpty then
               emptyLine()
               block(s"object $name:", ""):
                 anons.foreach: (name, o) =>
@@ -262,7 +292,24 @@ end RenderingStreams
                           if o.required.contains(name) then identity
                           else (s => s"Option[$s] = None")
                         line(s"${sanitise(name)}: ${typeWrap(propType(prop))},")
-                      
+
+                if anons.nonEmpty then emptyLine()
+                unions.foreach: (name, refs) =>
+                  refs.map(_.`$ref`.stripPrefix("#/definitions/")) match
+                    case h :: rest =>
+                      block(
+                        s"val $name = ",
+                        ""
+                      ):
+                        line(s"Builder[mcp.${h}](\"$h\")")
+                        nest:
+                          rest.foreach: h =>
+                            line(s".orElse[mcp.${h}](\"$h\")")
+
+                      line(s"type $name = $name.BuilderType")
+                    case _ =>
+            end if
+
         case e: EnumDefinition =>
           streams.in(name):
             line("package mcp")

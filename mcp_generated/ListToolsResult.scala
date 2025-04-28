@@ -1,7 +1,6 @@
 package mcp
 
 import upickle.default.*
-import upicklex.namedTuples.Macros.Implicits.given
 
 /** The server's response to a tools/list request from the client. */
 case class ListToolsResult(

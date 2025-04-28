@@ -1,4 +1,4 @@
-package mcp 
+package mcp
 
 import upickle.default.*
 
@@ -19,3 +19,7 @@ object tools:
     override type In = ListToolsRequest
     override type Out = ListToolsResult
 
+  object call extends MCPRequest("tools/call"):
+    override type In = CallToolRequest
+    override type Out = CallToolResult
+end tools

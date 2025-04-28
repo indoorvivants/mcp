@@ -1,7 +1,6 @@
 package mcp
 
 import upickle.default.*
-import upicklex.namedTuples.Macros.Implicits.given
 
 /** The server's response to a tool call.
 
@@ -14,8 +13,18 @@ However, any errors in _finding_ the tool, an error indicating that the
 server does not support tool calls, or any other exceptional conditions,
 should be reported as an MCP error response. */
 case class CallToolResult(
-  content: Seq[Any],
+  content: Seq[CallToolResult.Content],
   /** This result property is reserved by the protocol to allow clients and servers to attach additional metadata to their responses. */
   _meta: Option[ujson.Value] = None,
   isError: Option[Boolean] = None,
 ) derives ReadWriter
+
+object CallToolResult:
+  val Content = 
+    Builder[mcp.TextContent]("TextContent")
+      .orElse[mcp.ImageContent]("ImageContent")
+      .orElse[mcp.AudioContent]("AudioContent")
+      .orElse[mcp.EmbeddedResource]("EmbeddedResource")
+  
+  type Content = Content.BuilderType
+

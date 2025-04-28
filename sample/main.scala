@@ -3,6 +3,19 @@ package sample
 import mcp.*
 import upickle.default.*
 
+import sttp.client4.*
+import sttp.client4.upicklejson.default.*
+
+val backend = DefaultSyncBackend()
+
+def weather(city: String) =
+  basicRequest
+    .get(uri"https://wttr.in/London?format=4")
+    .send(backend)
+    .body
+    .right
+    .get
+
 @main def hello =
   val mcp = MCPBuilder
     .create()
@@ -27,6 +40,15 @@ import upickle.default.*
               required = Some(Seq("location")),
               `type` = "object"
             )
+          )
+        )
+      )
+    .handleRequest(tools.call): req =>
+      val location = req.params.arguments.get.obj("location").str
+      CallToolResult(content =
+        Seq(
+          CallToolResult.Content.embed(
+            TextContent(text = weather(location), `type` = "text")
           )
         )
       )

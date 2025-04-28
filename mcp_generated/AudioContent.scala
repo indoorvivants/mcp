@@ -1,7 +1,6 @@
 package mcp
 
 import upickle.default.*
-import upicklex.namedTuples.Macros.Implicits.given
 
 /** Audio provided to or from an LLM. */
 case class AudioContent(

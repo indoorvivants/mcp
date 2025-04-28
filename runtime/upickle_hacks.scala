@@ -3,28 +3,36 @@ package mcp
 import upickle.default.*
 import annotation.targetName
 import upickle.core.TraceVisitor.TraceException
+import scala.reflect.TypeTest
 
-class Builder[T] private (seq: Seq[(String, Reader[?])]):
+class Builder[T] private (seq: Seq[(String, Any => Boolean, ReadWriter[?])]):
   opaque type BuilderType <: T = T
 
-  def orElse[T2](label: String, other: Reader[T2]) =
-    new Builder[T2 | T]((label, other) +: seq)
-
   @targetName("orElse_given")
-  def orElse[T2](label: String)(using reader: Reader[T2]) =
-    new Builder[T2 | T]((label, reader) +: seq)
+  def orElse[T2](label: String)(using reader: ReadWriter[T2], tt: TypeTest[T | T2, T2]) =
+    new Builder[T2 | T]((label, t2 => tt.unapply(t2.asInstanceOf[T | T2]).isDefined, reader) +: seq)
+
+  def embed[A <: T](value: A): BuilderType = value 
 
   object BuilderType:
 
-    given codec: Reader[BuilderType] =
-      val rev = seq.reverse
+    given reader: Reader[BuilderType] =
+      val rev = seq.reverse.map(s => (s._1, s._3))
       upickle_hacks.badMerge(rev.head, rev.tail*)
+
+    given writer: Writer[BuilderType] = 
+      upickle_hacks.valueReader.comap[BuilderType]: bt =>
+        val (label, _, writer) = seq.find(_._2.apply(bt)).get
+        writeJs[BuilderType](bt)(using writer.asInstanceOf[Writer[BuilderType]])
+
+
+
   end BuilderType
 end Builder
 
 object Builder:
-  def apply[T: Reader](label: String) =
-    new Builder[T](Seq(label -> summon[Reader[T]]))
+  def apply[T: ReadWriter](label: String) =
+    new Builder[T](Seq.empty).orElse[T](label)
 
 given [T <: Singleton & String](using v: ValueOf[T]): ReadWriter[T] =
   summon[ReadWriter[String]].bimap[T](

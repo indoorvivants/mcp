@@ -1,7 +1,6 @@
 package mcp
 
 import upickle.default.*
-import upicklex.namedTuples.Macros.Implicits.given
 
 /** After receiving an initialize request from the client, the server sends this response. */
 case class InitializeResult(

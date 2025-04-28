@@ -1,7 +1,6 @@
 package mcp
 
 import upickle.default.*
-import upicklex.namedTuples.Macros.Implicits.given
 
 /** Additional properties describing a Tool to clients.
 

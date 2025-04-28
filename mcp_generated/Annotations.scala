@@ -1,7 +1,6 @@
 package mcp
 
 import upickle.default.*
-import upicklex.namedTuples.Macros.Implicits.given
 
 /** Optional annotations for the client. The client can use annotations to inform how objects are used or displayed */
 case class Annotations(

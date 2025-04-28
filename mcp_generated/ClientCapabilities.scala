@@ -1,7 +1,6 @@
 package mcp
 
 import upickle.default.*
-import upicklex.namedTuples.Macros.Implicits.given
 
 /** Capabilities a client may support. Known capabilities are defined here, in this schema, but this is not a closed set: any client can define its own, additional capabilities. */
 case class ClientCapabilities(
@@ -17,4 +16,5 @@ object ClientCapabilities:
   case class Roots(
     listChanged: Option[Boolean] = None,
   ) derives ReadWriter
+
 

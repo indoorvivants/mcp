@@ -8,3 +8,4 @@
 //> using publish.secretKeyPassword env:PGP_PASSPHRASE
 //> using publish.url https://github.com/indoorvivants/scala-mcp
 //> using publish.vcs github:indoorvivants/scala-mcp
+

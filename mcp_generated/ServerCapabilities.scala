@@ -1,7 +1,6 @@
 package mcp
 
 import upickle.default.*
-import upicklex.namedTuples.Macros.Implicits.given
 
 /** Capabilities that a server may support. Known capabilities are defined here, in this schema, but this is not a closed set: any server can define its own, additional capabilities. */
 case class ServerCapabilities(
@@ -30,4 +29,5 @@ object ServerCapabilities:
   case class Tools(
     listChanged: Option[Boolean] = None,
   ) derives ReadWriter
+
 

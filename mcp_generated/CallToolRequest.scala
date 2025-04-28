@@ -1,7 +1,6 @@
 package mcp
 
 import upickle.default.*
-import upicklex.namedTuples.Macros.Implicits.given
 
 /** Used by the client to invoke a tool provided by the server. */
 case class CallToolRequest(
@@ -14,4 +13,5 @@ object CallToolRequest:
     arguments: Option[ujson.Value] = None,
     name: String,
   ) derives ReadWriter
+
 

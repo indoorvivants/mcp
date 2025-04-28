@@ -1,7 +1,6 @@
 package mcp
 
 import upickle.default.*
-import upicklex.namedTuples.Macros.Implicits.given
 
 /** Definition for a tool the client can call. */
 case class Tool(
@@ -23,4 +22,5 @@ object Tool:
     required: Option[Seq[String]] = None,
     `type`: "object",
   ) derives ReadWriter
+
 
