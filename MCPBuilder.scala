@@ -40,20 +40,25 @@ class MCPBuilder private (
           requestHandlers.get(method) match
             case None =>
               out(
-                Error(
-                  ErrorCode.MethodNotFound,
-                  s"Method $method is not handled"
+                Response(
+                  id,
+                  error = Some(
+                    Error(
+                      ErrorCode.MethodNotFound,
+                      s"Method $method is not handled"
+                    )
+                  )
                 )
               )
 
             case Some(value) =>
               value(json) match
                 case err: Error =>
-                  out(err)
+                  out(Response(id, error = Some(err)))
 
                 case response: ujson.Value =>
                   out(
-                    Response(id, Some(writeJs(response)))
+                    Response(id, result = Some(writeJs(response)))
                   )
           end match
         end if

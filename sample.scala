@@ -14,6 +14,21 @@ import upickle.default.*
         serverInfo = Implementation("scala-mcp", "0.0.1")
       )
     .handleRequest(tools.list): req =>
-      ListToolsResult(Seq.empty)
+      ListToolsResult(
+        Seq(
+          Tool(
+            name = "Get weather (but in Scala)",
+            inputSchema = Tool.InputSchema(
+              Some(
+                ujson.Obj(
+                  "location" -> ujson.Obj("type" -> ujson.Str("string"))
+                )
+              ),
+              required = Some(Seq("location")),
+              `type` = "object"
+            )
+          )
+        )
+      )
     .process(System.in)
 end hello

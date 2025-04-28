@@ -43,6 +43,7 @@ case class Error(
 case class Response(
     id: ujson.Value,
     result: Option[ujson.Value] = None,
+    error: Option[Error] = None
 ) derives ReadWriter
 
 case class Notification(

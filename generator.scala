@@ -149,7 +149,12 @@ end RenderingStreams
     "ListToolsRequest",
     "ListToolsResult",
     "ToolAnnotations",
-    "Tool"
+    "Tool",
+    "CallToolRequest",
+    "CallToolResult",
+    "TextContent",
+    "ImageContent", 
+    "AudioContent"
   )
 
   def scaladoc(s: Option[String])(using RenderingContext) =
@@ -166,6 +171,8 @@ end RenderingStreams
     case s: Bool => "Boolean"
     case a: Arr =>
       s"Seq[${propType(a.items)}]"
+    case AnyOf(cases) => 
+      "Any"
     case o: Obj =>
       if o.properties.isEmpty then "ujson.Value"
       else
