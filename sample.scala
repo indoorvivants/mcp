@@ -3,14 +3,13 @@ package sample
 import mcp.*
 import upickle.default.*
 
-
-
 @main def hello =
   val mcp = MCPBuilder
     .create()
     .handleRequest(initialize): req =>
       InitializeResult(
-        capabilities = ServerCapabilities(tools = Some((listChanged = false))),
+        capabilities =
+          ServerCapabilities(tools = Some(ServerCapabilities.Tools())),
         protocolVersion = req.params.protocolVersion,
         serverInfo = Implementation("scala-mcp", "0.0.1")
       )

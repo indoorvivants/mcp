@@ -12,9 +12,22 @@ case class ServerCapabilities(
   /** Present if the server supports sending log messages to the client. */
   logging: Option[ujson.Value] = None,
   /** Present if the server offers any prompt templates. */
-  prompts: Option[(listChanged: Boolean)] = None,
+  prompts: Option[ServerCapabilities.Prompts] = None,
   /** Present if the server offers any resources to read. */
-  resources: Option[(listChanged: Boolean, subscribe: Boolean)] = None,
+  resources: Option[ServerCapabilities.Resources] = None,
   /** Present if the server offers any tools to call. */
-  tools: Option[(listChanged: Boolean)] = None,
+  tools: Option[ServerCapabilities.Tools] = None,
 ) derives ReadWriter
+
+object ServerCapabilities:
+  case class Prompts(
+    listChanged: Option[Boolean] = None,
+  ) derives ReadWriter
+  case class Resources(
+    listChanged: Option[Boolean] = None,
+    subscribe: Option[Boolean] = None,
+  ) derives ReadWriter
+  case class Tools(
+    listChanged: Option[Boolean] = None,
+  ) derives ReadWriter
+

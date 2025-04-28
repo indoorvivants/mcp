@@ -164,7 +164,7 @@ end RenderingStreams
     case s: Num  => "Double"
     case r: Ref  => s"mcp.${r.`$ref`.stripPrefix("#/definitions/")}"
     case s: Bool => "Boolean"
-    case a: Arr => 
+    case a: Arr =>
       s"Seq[${propType(a.items)}]"
     case o: Obj =>
       if o.properties.isEmpty then "ujson.Value"
@@ -174,8 +174,8 @@ end RenderingStreams
           .map { case (name, prop) =>
             val typeWrap: String => String =
               if o.required.contains(name) then identity
-              else (s => s"Option[$s] = None")
-            s"${sanitise(name)}: ${propType(prop)}"
+              else (s => s"Option[$s]")
+            s"${sanitise(name)}: ${typeWrap(propType(prop))}"
           }
           .mkString("(", ", ", ")")
 
@@ -190,48 +190,72 @@ end RenderingStreams
             line("import upicklex.namedTuples.Macros.Implicits.given")
             emptyLine()
             scaladoc(defDef.description)
+
+            val anonToBuild = List.newBuilder[(String, Obj)]
             block(s"case class $name(", ") derives ReadWriter"):
-              val sortedProps = defDef.properties.toList.sortBy: (propName, _) =>
-                (!defDef.required.contains(propName), propName)
-                
-              sortedProps.foreach {
-                case (name, prop) =>
-                  val cleanName = sanitise(name)
-                  val typeWrap: String => String =
-                    if defDef.required.contains(name) then identity
-                    else (s => s"Option[$s] = None")
-                  prop match
-                    case s: Str =>
-                      val const = s.const.map(s => s""" "$s"   """.trim)
-                      scaladoc(s.description)
+              val sortedProps = defDef.properties.toList.sortBy:
+                (propName, _) => (!defDef.required.contains(propName), propName)
+
+              sortedProps.foreach { case (propName, prop) =>
+                val cleanName = sanitise(propName)
+                val typeWrap: String => String =
+                  if defDef.required.contains(propName) then identity
+                  else (s => s"Option[$s] = None")
+                prop match
+                  case s: Str =>
+                    val const = s.const.map(s => s""" "$s"   """.trim)
+                    scaladoc(s.description)
+                    line(
+                      s"$cleanName: ${typeWrap(propType(s))},"
+                    )
+                  case s: Num =>
+                    scaladoc(s.description)
+                    line(s"$cleanName: ${typeWrap(propType(s))},")
+                  case r: Ref =>
+                    scaladoc(r.description)
+                    line(s"$cleanName: ${typeWrap(propType(r))},")
+                  case Arr(_, r @ Ref(_, _), description) =>
+                    scaladoc(description)
+                    line(
+                      s"$cleanName: ${typeWrap(s"Seq[${{ propType(r) }}]")},"
+                    )
+
+                  case o: Obj =>
+                    scaladoc(o.description)
+                    if o.properties.nonEmpty then
                       line(
-                        s"$cleanName: ${typeWrap(propType(s))},"
+                        s"$cleanName: ${typeWrap(s"$name.${propName.capitalize}")},"
                       )
-                    case s: Num =>
-                      scaladoc(s.description)
-                      line(s"$cleanName: ${typeWrap(propType(s))},")
-                    case r: Ref =>
-                      scaladoc(r.description)
-                      line(s"$cleanName: ${typeWrap(propType(r))},")
-                    case Arr(_, r @ Ref(_, _), description) =>
-                      scaladoc(description)
+                      anonToBuild += propName.capitalize -> o
+                    else 
                       line(
-                        s"$cleanName: ${typeWrap(s"Seq[${{ propType(r) }}]")},"
+                        s"$cleanName: ${typeWrap("ujson.Value")},"
                       )
 
-                    case o: Obj =>
-                      scaladoc(o.description)
-                      line(
-                        s"$cleanName: ${typeWrap(propType(o))},"
-                      )
 
-                    case other =>
-                      line(
-                        s"$cleanName: ${typeWrap(propType(other))},"
-                      )
-                  end match
+                  case other =>
+                    line(
+                      s"$cleanName: ${typeWrap(propType(other))},"
+                    )
+                end match
 
               }
+
+            val anons = anonToBuild.result()
+            if anons.nonEmpty then
+              emptyLine()
+              block(s"object $name:", ""):
+                anons.foreach: (name, o) =>
+                  block(s"case class $name(", ") derives ReadWriter"):
+
+                    val props = o.properties.toList.sortBy(_._1)
+                    props
+                      .foreach: (name, prop) =>
+                        val typeWrap: String => String =
+                          if o.required.contains(name) then identity
+                          else (s => s"Option[$s] = None")
+                        line(s"${sanitise(name)}: ${typeWrap(propType(prop))},")
+                      
         case e: EnumDefinition =>
           streams.in(name):
             line("package mcp")

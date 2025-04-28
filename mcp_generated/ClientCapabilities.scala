@@ -8,7 +8,13 @@ case class ClientCapabilities(
   /** Experimental, non-standard capabilities that the client supports. */
   experimental: Option[ujson.Value] = None,
   /** Present if the client supports listing roots. */
-  roots: Option[(listChanged: Boolean)] = None,
+  roots: Option[ClientCapabilities.Roots] = None,
   /** Present if the client supports sampling from an LLM. */
   sampling: Option[ujson.Value] = None,
 ) derives ReadWriter
+
+object ClientCapabilities:
+  case class Roots(
+    listChanged: Option[Boolean] = None,
+  ) derives ReadWriter
+
