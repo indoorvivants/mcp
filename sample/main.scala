@@ -30,7 +30,8 @@ def weather(city: String) =
       ListToolsResult(
         Seq(
           Tool(
-            name = "Get weather (but in Scala)",
+            name = "get_weather",
+            description = Some("Get weather in concise form in a given location"),
             inputSchema = Tool.InputSchema(
               Some(
                 ujson.Obj(
