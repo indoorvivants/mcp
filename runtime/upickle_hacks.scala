@@ -6,13 +6,21 @@ import upickle.core.TraceVisitor.TraceException
 import scala.reflect.TypeTest
 
 class Builder[T] private (seq: Seq[(String, Any => Boolean, ReadWriter[?])]):
-  opaque type BuilderType <: T = T
+  opaque type BuilderType >: T = T
 
   @targetName("orElse_given")
-  def orElse[T2](label: String)(using reader: ReadWriter[T2], tt: TypeTest[T | T2, T2]) =
-    new Builder[T2 | T]((label, t2 => tt.unapply(t2.asInstanceOf[T | T2]).isDefined, reader) +: seq)
+  def orElse[T2](
+      label: String
+  )(using reader: ReadWriter[T2], tt: TypeTest[T | T2, T2]) =
+    new Builder[T2 | T](
+      (
+        label,
+        t2 => tt.unapply(t2.asInstanceOf[T | T2]).isDefined,
+        reader
+      ) +: seq
+    )
 
-  def embed[A <: T](value: A): BuilderType = value 
+  def embed[A <: T](value: A): BuilderType = value
 
   object BuilderType:
 
@@ -20,12 +28,10 @@ class Builder[T] private (seq: Seq[(String, Any => Boolean, ReadWriter[?])]):
       val rev = seq.reverse.map(s => (s._1, s._3))
       upickle_hacks.badMerge(rev.head, rev.tail*)
 
-    given writer: Writer[BuilderType] = 
+    given writer: Writer[BuilderType] =
       upickle_hacks.valueReader.comap[BuilderType]: bt =>
         val (label, _, writer) = seq.find(_._2.apply(bt)).get
         writeJs[BuilderType](bt)(using writer.asInstanceOf[Writer[BuilderType]])
-
-
 
   end BuilderType
 end Builder

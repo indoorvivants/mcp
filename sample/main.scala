@@ -10,7 +10,7 @@ val backend = DefaultSyncBackend()
 
 def weather(city: String) =
   basicRequest
-    .get(uri"https://wttr.in/London?format=4")
+    .get(uri"https://wttr.in/$city?format=4")
     .send(backend)
     .body
     .right
@@ -31,7 +31,8 @@ def weather(city: String) =
         Seq(
           Tool(
             name = "get_weather",
-            description = Some("Get weather in concise form in a given location"),
+            description =
+              Some("Get weather in concise form in a given location"),
             inputSchema = Tool.InputSchema(
               Some(
                 ujson.Obj(
@@ -48,9 +49,7 @@ def weather(city: String) =
       val location = req.params.arguments.get.obj("location").str
       CallToolResult(content =
         Seq(
-          CallToolResult.Content.embed(
-            TextContent(text = weather(location), `type` = "text")
-          )
+          TextContent(text = weather(location), `type` = "text")
         )
       )
     .process(System.in)
