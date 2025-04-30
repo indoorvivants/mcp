@@ -39,8 +39,7 @@ def weather(city: String) =
                   "location" -> ujson.Obj("type" -> ujson.Str("string"))
                 )
               ),
-              required = Some(Seq("location")),
-              `type` = "object"
+              required = Some(Seq("location"))
             )
           )
         )
