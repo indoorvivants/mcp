@@ -1,0 +1,13 @@
+package mcp
+
+import upickle.default.*
+
+/** Text provided to or from an LLM. */
+@upickle.implicits.serializeDefaults(true)
+case class TextContent(
+  /** The text content of the message. */
+  text: String,
+  `type`: "text" = "text",
+  /** Optional annotations for the client. */
+  annotations: Option[mcp.Annotations] = None,
+) derives ReadWriter

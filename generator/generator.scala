@@ -170,13 +170,14 @@ end RenderingStreams
       line(s"/** $str */")
     }
 
-  def propDefault(s: Property, required: Boolean) =
+  def propDefault(s: Property, required: Boolean): Option[String] =
     s match
       case s: Str =>
         s.const.flatMap: value =>
-          if required then Some(s"\"$value\",")
-          else Some(s"Some(\"$value\"),")
-      case _ => None
+          if required then Some(s"\"$value\"")
+          else Some(s"Some(\"$value\")")
+      case _ if !required => Some("None")
+      case _              => None
   end propDefault
 
   def propType(s: Property, required: Boolean): String =
@@ -242,6 +243,7 @@ end RenderingStreams
                 prop match
                   case s: Str =>
                     scaladoc(s.description)
+                    line(s"$cleanName: $tpe$default,")
 
                   case s: Num =>
                     scaladoc(s.description)
@@ -277,12 +279,12 @@ end RenderingStreams
                     scaladoc(o.description)
                     if o.properties.nonEmpty then
                       line(
-                        s"$cleanName: ${typeWrap(s"$name.${propName.capitalize}")},"
+                        s"$cleanName: ${typeWrap(s"$name.${propName.capitalize}")}$default,"
                       )
                       anonToBuild += propName.capitalize -> o
                     else
                       line(
-                        s"$cleanName: ${typeWrap("ujson.Value")},"
+                        s"$cleanName: ${typeWrap("ujson.Value")}$default,"
                       )
                     end if
 
@@ -309,6 +311,9 @@ end RenderingStreams
                         val tpe = propType(prop, o.required.contains(name))
                         val default =
                           propDefault(prop, o.required.contains(name))
+                            .map(" = " + _)
+                            .getOrElse("")
+
                         line(
                           s"${sanitise(name)}: $tpe$default,"
                         )
