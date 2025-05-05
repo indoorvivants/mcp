@@ -1,10 +1,11 @@
 package mcp
 
-import upickle.default.*
+import mcp.json.*
 
-/** Describes the name and version of an MCP implementation. */
-@upickle.implicits.serializeDefaults(true)
+/**
+ * Describes the name and version of an MCP implementation.
+ */
 case class Implementation(
-  name: String,
-  version: String,
+   name: String,
+   version: String,
 ) derives ReadWriter

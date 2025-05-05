@@ -1,19 +1,21 @@
 package mcp
 
-import upickle.default.*
+import mcp.json.*
 
-/** The sender or recipient of messages and data in a conversation. */
+/**
+ * The sender or recipient of messages and data in a conversation.
+ */
 enum Role:
-  case assistant
-  case user
+   case assistant
+   case user
 end Role
 
 object Role:
-  private val mapping = Role.values.map(r => r.toString -> r).toMap
-  given ReadWriter[Role] = 
-    summon[ReadWriter[String]].bimap(
-      s => s.toString,
-      r => mapping.getOrElse(r, throw new IllegalArgumentException(s"Invalid role: $r"))
-    )
-  
+   private val mapping = Role.values.map(r => r.toString -> r).toMap
+   given ReadWriter[Role] = 
+      summon[ReadWriter[String]].bimap(
+         s => s.toString,
+         r => mapping.getOrElse(r, throw new IllegalArgumentException(s"Invalid role: $r"))
+      )
+   
 

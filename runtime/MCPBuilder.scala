@@ -1,6 +1,6 @@
 package mcp
 
-import upickle.default.*
+import mcp.json.*
 import java.io.{BufferedReader, InputStreamReader}
 import upickle.core.TraceVisitor.TraceException
 
@@ -16,6 +16,8 @@ class MCPBuilder private (
     new MCPBuilder(requestHandlers.updated(req.method, handler))
   end handleRequest
 
+  def handlePings() = handleRequest(ping)(req => PingResult())
+
   def process(is: java.io.InputStream) =
 
     val reader = new BufferedReader(new InputStreamReader(is))
@@ -23,8 +25,22 @@ class MCPBuilder private (
     def out[J: Writer](j: J) =
       val obj = writeJs(j)
       obj("jsonrpc") = "2.0"
-      System.err.println(s"Outputting ${obj}")
-      System.out.println(write(obj))
+
+      def dropNulls(v: ujson.Value): ujson.Value =
+        v match
+          case ujson.Obj(fields) =>
+
+            val v: ujson.Obj = fields.flatMap: (k, v) =>
+              if v == ujson.Null then None
+              else Some(k -> dropNulls(v))
+
+            v
+
+          case _ => v
+      end dropNulls
+
+      System.err.println(s"Outputting ${dropNulls(obj)}")
+      System.out.println(write(dropNulls(obj)))
     end out
 
     var line: String = null

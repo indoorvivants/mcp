@@ -1,19 +1,19 @@
 package mcp
 
-import upickle.default.*
+import mcp.json.*
 
-/** Used by the client to invoke a tool provided by the server. */
-@upickle.implicits.serializeDefaults(true)
+/**
+ * Used by the client to invoke a tool provided by the server.
+ */
 case class CallToolRequest(
-  method: "tools/call" = "tools/call",
-  params: CallToolRequest.Params,
+   params: CallToolRequest.Params,
+   method: "tools/call" = "tools/call",
 ) derives ReadWriter
 
 object CallToolRequest:
-  @upickle.implicits.serializeDefaults(true)
-  case class Params(
-    arguments: Option[ujson.Value] = None,
-    name: String,
-  ) derives ReadWriter
+   case class Params(
+      name: String,
+      arguments: Option[ujson.Value] = None,
+   ) derives ReadWriter
 
 

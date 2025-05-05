@@ -3,13 +3,13 @@ package mcp
 import mcp.{*, given}
 
 import java.io.{BufferedReader, InputStreamReader}
-import upickle.default.*
+import mcp.json.*
 
 case class Request(
     id: ujson.Value,
     method: String,
     params: Option[ujson.Value] = None
-) derives upickle.default.Reader
+) derives json.Reader
 
 enum ErrorCode(val value: Int):
   // Standard JSON-RPC error codes
@@ -37,16 +37,16 @@ end ErrorCode
 case class Error(
     code: ErrorCode,
     message: String,
-    data: Option[ujson.Value] = None,
-) derives upickle.default.ReadWriter
+    data: Option[ujson.Value] = None
+) derives json.ReadWriter
 
 case class Response(
     id: ujson.Value,
     result: Option[ujson.Value] = None,
     error: Option[Error] = None
-) derives ReadWriter
+) derives json.ReadWriter
 
 case class Notification(
     method: String,
-    params: Option[ujson.Value] = None,
-) derives ReadWriter
+    params: Option[ujson.Value] = None
+) derives json.ReadWriter

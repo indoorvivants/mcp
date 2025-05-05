@@ -1,9 +1,17 @@
 package mcp
 
-import upickle.default.*
 import annotation.targetName
 import upickle.core.TraceVisitor.TraceException
 import scala.reflect.TypeTest
+import upickle.core.Visitor
+import upickle.core.Annotator.Checker
+
+object json extends upickle.AttributeTagged:
+  override def optionsAsNulls: Boolean = true
+  override def serializeDefaults: Boolean = true
+end json
+
+import json.*
 
 class Builder[T] private (seq: Seq[(String, Any => Boolean, ReadWriter[?])]):
   opaque type BuilderType >: T = T
@@ -49,7 +57,7 @@ given [T <: Singleton & String](using v: ValueOf[T]): ReadWriter[T] =
   )
 
 object upickle_hacks:
-  val valueReader = upickle.default.readwriter[ujson.Value]
+  val valueReader = json.readwriter[ujson.Value]
   def badMerge[T](
       r1: => (String, Reader[?]),
       rest: (String, Reader[?])*
