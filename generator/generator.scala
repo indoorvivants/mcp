@@ -220,7 +220,9 @@ end RenderingStreams
     "ResourceUpdatedNotification",
     "ModelPreferences",
     "SamplingMessage",
-    "ModelHint"
+    "ModelHint",
+    "CreateMessageRequest",
+    "CreateMessageResult"
   )
 
   enum Kind:
