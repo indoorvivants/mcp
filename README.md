@@ -18,5 +18,10 @@ You can run the provided  [sample](./sample/main.scala) using [MCP inspector](ht
 npx @modelcontextprotocol/inspector make run-sample
 ```
 
+The sample loads and works in the MCP inspector:
 
+![CleanShot 2025-05-05 at 09 24 48](https://github.com/user-attachments/assets/823aac57-0de9-404c-a1da-93cb535eb471)
 
+And can be [configured in Claude desktop](https://modelcontextprotocol.info/docs/quickstart/user/#2-add-the-filesystem-mcp-server):
+
+![CleanShot 2025-05-05 at 09 20 02](https://github.com/user-attachments/assets/36a69ded-6daf-4f06-8ed4-338f1a9c2a11)
