@@ -5,7 +5,10 @@ import java.io.{BufferedReader, InputStreamReader}
 import upickle.core.TraceVisitor.TraceException
 
 class MCPBuilder private (
-    requestHandlers: Map[String, ujson.Value => ujson.Value | Error]
+    requestHandlers: Map[
+      String,
+      (ujson.Value) => ujson.Value | Error
+    ]
 ):
   def handleRequest(req: MCPRequest)(f: req.In => req.Out | Error) =
     val handler = (in: ujson.Value) =>
@@ -36,7 +39,7 @@ class MCPBuilder private (
 
             v
 
-          case ujson.Arr(items) => 
+          case ujson.Arr(items) =>
             items.map(dropNulls): ujson.Arr
 
           case _ => v
@@ -48,17 +51,17 @@ class MCPBuilder private (
 
     var line: String = null
     while { line = reader.readLine(); line != null } do
-      try
-        val json = read[ujson.Obj](line)
-        System.err.println(s"Receiving $json")
-        if json.value.contains("id") && json.value.contains("method")
-        then // it's a request
-          val method = json.value("method").str
-          val id = json.value("id")
+      val json = read[ujson.Obj](line)
+      System.err.println(s"Receiving $json")
+      if json.value.contains("id") && json.value.contains("method")
+      then // it's a request
+        val method = json.value("method").str
+        val id = json.value("id")
 
-          requestHandlers.get(method) match
-            case None =>
-              out(
+        val response =
+          handleExceptions(id):
+            requestHandlers.get(method) match
+              case None =>
                 Response(
                   id,
                   error = Some(
@@ -68,27 +71,33 @@ class MCPBuilder private (
                     )
                   )
                 )
-              )
 
-            case Some(value) =>
-              value(json) match
-                case err: Error =>
-                  out(Response(id, error = Some(err)))
+              case Some(value) =>
+                value(json) match
+                  case err: Error =>
+                    Response(id, error = Some(err))
 
-                case response: ujson.Value =>
-                  out(
+                  case response: ujson.Value =>
                     Response(id, result = Some(writeJs(response)))
-                  )
-          end match
-        end if
-      catch
-        case e: TraceException =>
-          out(Error(ErrorCode.InvalidRequest, e.getMessage))
-        case e =>
-          out(Error(ErrorCode.InternalError, e.getMessage))
 
+        out(response)
+      end if
     end while
   end process
+
+  private def handleExceptions[T](id: ujson.Value)(f: => Response) =
+    try f
+    catch
+      case e: TraceException =>
+        Response(
+          id,
+          error = Some(Error(ErrorCode.InvalidRequest, e.getMessage))
+        )
+      case e =>
+        Response(
+          id,
+          error = Some(Error(ErrorCode.InternalError, e.getMessage))
+        )
 
 end MCPBuilder
 

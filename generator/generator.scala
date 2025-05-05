@@ -180,7 +180,17 @@ end RenderingStreams
     "BlobResourceContents",
     "PingRequest",
     "PingResult",
-    "ProgressToken"
+    "ProgressToken",
+    "ListPromptsRequest",
+    "ListPromptsResult",
+    "Prompt",
+    "PromptArgument",
+    "GetPromptRequest",
+    "GetPromptResult",
+    "PromptMessage",
+    "ListResourcesRequest",
+    "ListResourcesResult",
+    "Resource"
   )
 
   val methods = Map.newBuilder[String, String]
@@ -486,9 +496,10 @@ def propType(s: Property, required: Boolean): String =
     case s: Str =>
       val const = s.const.map(s => s""" "$s"   """.trim)
       const.getOrElse("String")
-    case s: Num  => "Double"
-    case r: Ref  => s"mcp.${r.`$ref`.stripPrefix("#/definitions/")}"
-    case s: Bool => "Boolean"
+    case s: Num     => "Double"
+    case s: Integer => "Int"
+    case r: Ref     => s"mcp.${r.`$ref`.stripPrefix("#/definitions/")}"
+    case s: Bool    => "Boolean"
     case a: Arr =>
       s"Seq[${propType(a.items, required = true)}]"
     case AnyOf(cases) =>
