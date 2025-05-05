@@ -2,18 +2,16 @@ package mcp
 
 import mcp.json.*
 
-/**
- * Used by the client to invoke a tool provided by the server.
- */
+/** Used by the client to invoke a tool provided by the server.
+  */
 case class CallToolRequest(
-   params: CallToolRequest.Params,
-   method: "tools/call" = "tools/call",
+    params: CallToolRequest.Params,
+    method: "tools/call" = "tools/call"
 ) derives ReadWriter
 
 object CallToolRequest:
-   case class Params(
+  case class Params(
       name: String,
-      arguments: Option[ujson.Value] = None,
-   ) derives ReadWriter
-
-
+      arguments: Option[ujson.Obj] = None
+  ) derives ReadWriter
+end CallToolRequest

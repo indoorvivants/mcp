@@ -2,10 +2,9 @@ package mcp
 
 import mcp.json.*
 
-/**
- * A uniquely identifying ID for a request in JSON-RPC.
- */
+/** A uniquely identifying ID for a request in JSON-RPC.
+  */
 val RequestId = Builder[String]("String")
-   .orElse[Int]("Int")
+  .orElse[Int]("Int")
 
 type RequestId = RequestId.BuilderType

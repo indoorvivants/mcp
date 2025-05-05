@@ -194,7 +194,15 @@ end RenderingStreams
     "Resource",
     "InitializedNotification",
     "CancelledNotification",
-    "RequestId"
+    "RequestId",
+    "ProgressNotification",
+    "RootsListChangedNotification",
+    "ResourceListChangedNotification",
+    "ResourceUpdateNotification",
+    "ToolListChangedNotification",
+    "LoggingMessageNotification",
+    "PromptListChangedNotification",
+    "LoggingLevel"
   )
 
   enum Kind:
@@ -247,6 +255,13 @@ end RenderingStreams
     "PingResult" -> ObjectDefinition(`type` = "object")
   )
 
+  val unhandled = schema.definitions.filter(k => !toRender(k._1))
+
+  println("NOT handled:")
+  unhandled.foreach { case (name, defDef) =>
+    println(s"  $name")
+  }
+
   (schema.definitions.filter(k => toRender(k._1)) ++ synthetic).foreach {
     case (name, defDef) =>
       defDef match
@@ -281,7 +296,7 @@ end RenderingStreams
               e.`enum`.toList.flatten.foreach: l =>
                 line(s"case $l")
             emptyLine()
-            block("object Role:", ""):
+            block(s"object $name:", ""):
               line(
                 s"private val mapping = $name.values.map(r => r.toString -> r).toMap"
               )
@@ -486,7 +501,7 @@ def renderObjectLike(
             anonToBuild += propName.capitalize -> o
           else
             line(
-              s"$cleanName: ${typeWrap("ujson.Value")}$default,"
+              s"$cleanName: ${typeWrap("ujson.Obj")}$default,"
             )
           end if
 
@@ -561,7 +576,8 @@ def propType(s: Property, required: Boolean): String =
       s"Seq[${propType(a.items, required = true)}]"
     case AnyOf(cases) =>
       s"Any /*$cases*/"
-    case o: Obj if o.properties.isEmpty => "ujson.Value"
+    case o: Obj if o.properties.isEmpty => "ujson.Obj"
+    case d: Data                        => "ujson.Value"
 
   typeWrap(rawType)
 end propType

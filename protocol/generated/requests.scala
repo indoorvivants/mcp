@@ -1,44 +1,86 @@
 package mcp
 
 object initialize extends MCPRequest("initialize"), FromClient:
-   type In = InitializeRequest
-   type Out = InitializeResult
+  type In = InitializeRequest
+  type Out = InitializeResult
 
 object notifications:
-   object cancelled extends MCPNotification("notifications/cancelled"), FromClient, FromServer:
-      type In = CancelledNotification
-   
-   object initialized extends MCPNotification("notifications/initialized"), FromClient:
-      type In = InitializedNotification
-   
+  object cancelled
+      extends MCPNotification("notifications/cancelled"),
+        FromClient,
+        FromServer:
+    type In = CancelledNotification
+  end cancelled
+
+  object initialized
+      extends MCPNotification("notifications/initialized"),
+        FromClient:
+    type In = InitializedNotification
+
+  object message extends MCPNotification("notifications/message"), FromServer:
+    type In = LoggingMessageNotification
+
+  object progress
+      extends MCPNotification("notifications/progress"),
+        FromClient,
+        FromServer:
+    type In = ProgressNotification
+  end progress
+
+  object prompts:
+    object list_changed
+        extends MCPNotification("notifications/prompts/list_changed"),
+          FromServer:
+      type In = PromptListChangedNotification
+  end prompts
+
+  object resources:
+    object list_changed
+        extends MCPNotification("notifications/resources/list_changed"),
+          FromServer:
+      type In = ResourceListChangedNotification
+  end resources
+
+  object roots:
+    object list_changed
+        extends MCPNotification("notifications/roots/list_changed"),
+          FromClient:
+      type In = RootsListChangedNotification
+  end roots
+
+  object tools:
+    object list_changed
+        extends MCPNotification("notifications/tools/list_changed"),
+          FromServer:
+      type In = ToolListChangedNotification
+  end tools
+end notifications
 
 object ping extends MCPRequest("ping"), FromClient, FromServer:
-   type In = PingRequest
-   type Out = PingResult
+  type In = PingRequest
+  type Out = PingResult
 
 object prompts:
-   object get extends MCPRequest("prompts/get"), FromClient:
-      type In = GetPromptRequest
-      type Out = GetPromptResult
-   
-   object list extends MCPRequest("prompts/list"), FromClient:
-      type In = ListPromptsRequest
-      type Out = ListPromptsResult
-   
+  object get extends MCPRequest("prompts/get"), FromClient:
+    type In = GetPromptRequest
+    type Out = GetPromptResult
+
+  object list extends MCPRequest("prompts/list"), FromClient:
+    type In = ListPromptsRequest
+    type Out = ListPromptsResult
+end prompts
 
 object resources:
-   object list extends MCPRequest("resources/list"), FromClient:
-      type In = ListResourcesRequest
-      type Out = ListResourcesResult
-   
+  object list extends MCPRequest("resources/list"), FromClient:
+    type In = ListResourcesRequest
+    type Out = ListResourcesResult
 
 object tools:
-   object call extends MCPRequest("tools/call"), FromClient:
-      type In = CallToolRequest
-      type Out = CallToolResult
-   
-   object list extends MCPRequest("tools/list"), FromClient:
-      type In = ListToolsRequest
-      type Out = ListToolsResult
-   
+  object call extends MCPRequest("tools/call"), FromClient:
+    type In = CallToolRequest
+    type Out = CallToolResult
 
+  object list extends MCPRequest("tools/list"), FromClient:
+    type In = ListToolsRequest
+    type Out = ListToolsResult
+end tools

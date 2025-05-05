@@ -1,5 +1,6 @@
 generate:
 	scala-cli run generator runtime -M mcp.generator
+	scala-cli fmt protocol
 
 watch-generate:
 	scala-cli run -w generator runtime -M mcp.generator
@@ -16,7 +17,7 @@ run-sample:
 	@scala-cli run protocol runtime sample
 
 check-docs:
-	scala-cli compile README.md protocol runtime 
+	scala-cli compile README.md protocol runtime
 
 publish-local:
 	scala-cli publish local protocol runtime project.scala --signer none --workspace .
