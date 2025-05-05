@@ -30,7 +30,7 @@ import mcp.*
         protocolVersion = req.params.protocolVersion,
         serverInfo = Implementation("scala-mcp", "0.0.1")
       )
-    .process(System.in)
+    .run()
 end hello
 
 ```
@@ -41,7 +41,7 @@ Save it in a `mcp.scala` file and run it with MCP Inspector:
 npx @modelcontextprotocol/inspector scala-cli run mcp.scala
 ```
 
-## See it in action 
+## See it in action
 
 You can run the provided  [sample](./sample/main.scala) using [MCP inspector](https://github.com/modelcontextprotocol/inspector) as long as you have [Scala CLI](https://scala-cli.virtuslab.org/) and [npx](https://docs.npmjs.com/cli/v9/commands/npx?v=true) installed:
 

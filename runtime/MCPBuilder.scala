@@ -57,7 +57,7 @@ class MCPBuilder private (opts: Opts):
     )
   end handleNotification
 
-  def run() =
+  def run(): Unit =
     val reader = new BufferedReader(new InputStreamReader(opts.in))
 
     var line: String = null
