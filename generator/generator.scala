@@ -202,7 +202,25 @@ end RenderingStreams
     "ToolListChangedNotification",
     "LoggingMessageNotification",
     "PromptListChangedNotification",
-    "LoggingLevel"
+    "LoggingLevel",
+    "SubscribeRequest",
+    "UnsubscribeRequest",
+    "ReadResourceRequest",
+    "ReadResourceResult",
+    "TextResourceContents",
+    "BlobResourceContents",
+    "ListResourceTemplatesRequest",
+    "ListResourceTemplatesResult",
+    "ListRootsRequest",
+    "ListRootsResult",
+    "ResourceTemplate",
+    "Root",
+    "CreateMessageRequest",
+    "CreateMessageResult",
+    "ResourceUpdatedNotification",
+    "ModelPreferences",
+    "SamplingMessage",
+    "ModelHint"
   )
 
   enum Kind:
@@ -252,15 +270,16 @@ end RenderingStreams
   val requestMethods = Map.newBuilder[String, Kind]
 
   val synthetic = Seq(
-    "PingResult" -> ObjectDefinition(`type` = "object")
+    "PingResult" -> ObjectDefinition(`type` = "object"),
+    "SubscribeResult" -> ObjectDefinition(`type` = "object"),
+    "UnsubscribeResult" -> ObjectDefinition(`type` = "object")
   )
 
   val unhandled = schema.definitions.filter(k => !toRender(k._1))
 
   println("NOT handled:")
-  unhandled.foreach { case (name, defDef) =>
+  unhandled.keys.toList.sorted.foreach: name =>
     println(s"  $name")
-  }
 
   (schema.definitions.filter(k => toRender(k._1)) ++ synthetic).foreach {
     case (name, defDef) =>
@@ -372,7 +391,7 @@ end RenderingStreams
       val fullPath = (current.name +: prev).filter(_.nonEmpty)
       val methName = fullPath.reverse.mkString("/")
 
-      println(s"Rendering $methName")
+      // println(s"Rendering $methName")
 
       if current.name.nonEmpty then
         // it's a scope

@@ -39,6 +39,11 @@ object notifications:
         extends MCPNotification("notifications/resources/list_changed"),
           FromServer:
       type In = ResourceListChangedNotification
+
+    object updated
+        extends MCPNotification("notifications/resources/updated"),
+          FromServer:
+      type In = ResourceUpdatedNotification
   end resources
 
   object roots:
@@ -74,6 +79,34 @@ object resources:
   object list extends MCPRequest("resources/list"), FromClient:
     type In = ListResourcesRequest
     type Out = ListResourcesResult
+
+  object read extends MCPRequest("resources/read"), FromClient:
+    type In = ReadResourceRequest
+    type Out = ReadResourceResult
+
+  object subscribe extends MCPRequest("resources/subscribe"), FromClient:
+    type In = SubscribeRequest
+    type Out = SubscribeResult
+
+  object templates:
+    object list extends MCPRequest("resources/templates/list"), FromClient:
+      type In = ListResourceTemplatesRequest
+      type Out = ListResourceTemplatesResult
+
+  object unsubscribe extends MCPRequest("resources/unsubscribe"), FromClient:
+    type In = UnsubscribeRequest
+    type Out = UnsubscribeResult
+end resources
+
+object roots:
+  object list extends MCPRequest("roots/list"), FromServer:
+    type In = ListRootsRequest
+    type Out = ListRootsResult
+
+object sampling:
+  object createMessage extends MCPRequest("sampling/createMessage"), FromServer:
+    type In = CreateMessageRequest
+    type Out = CreateMessageResult
 
 object tools:
   object call extends MCPRequest("tools/call"), FromClient:
