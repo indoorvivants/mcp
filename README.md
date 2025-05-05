@@ -10,7 +10,39 @@ At the moment the library consists of three parts:
 
 Note that the jsonrpc implementation is blocking, does not support cancellation, and is generally not designed for serious usage – but it's great to get things off the ground quickly! In the future, this library will provide an integration with [jsonrpclib](https://github.com/neandertech/jsonrpclib/), once that library is published for Scala Native 0.5 (or may be earlier, if someone works on that integration).
 
-## Getting started 
+## Getting Started
+
+This is the most minimal MCP server:
+
+```scala
+//> using scala 3.6.4
+//> using dep com.indoorvivants::mcp::latest.release
+
+import mcp.*
+
+@main def hello =
+  val mcp = MCPBuilder
+    .create()
+    .handlePings()
+    .handleRequest(initialize): req =>
+      InitializeResult(
+        capabilities =
+          ServerCapabilities(tools = Some(ServerCapabilities.Tools())),
+        protocolVersion = req.params.protocolVersion,
+        serverInfo = Implementation("scala-mcp", "0.0.1")
+      )
+    .process(System.in)
+end hello
+
+```
+
+Save it in a `mcp.scala` file and run it with MCP Inspector:
+
+```bash
+npx @modelcontextprotocol/inspector scala-cli run mcp.scala
+```
+
+## See it in action 
 
 You can run the provided  [sample](./sample/main.scala) using [MCP inspector](https://github.com/modelcontextprotocol/inspector) as long as you have [Scala CLI](https://scala-cli.virtuslab.org/) and [npx](https://docs.npmjs.com/cli/v9/commands/npx?v=true) installed:
 

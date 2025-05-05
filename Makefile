@@ -5,13 +5,18 @@ watch-generate:
 	scala-cli run -w generator runtime -M mcp.generator
 
 sample-native:
-	scala-cli package protocol runtime sample --native -f -o ./sample-native
+	mkdir -p out
+	scala-cli package protocol runtime sample --native -f -o ./out/sample-native
 
 sample-jar:
-	scala-cli package protocol runtime sample --assembly -f -o ./sample-jar
+	mkdir -p out
+	scala-cli package protocol runtime sample --assembly -f -o ./out/sample-jar
 
 run-sample:
 	@scala-cli run protocol runtime sample
+
+check-docs:
+	scala-cli compile README.md protocol runtime 
 
 publish-local:
 	scala-cli publish local protocol runtime project.scala --signer none --workspace .
