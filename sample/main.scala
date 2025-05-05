@@ -21,6 +21,7 @@ def weather(city: String) =
 @main def hello =
   val mcp = MCPBuilder
     .create()
+    .verbose
     .handleRequest(ping)(_ => PingResult())
     .handleRequest(initialize): req =>
       InitializeResult(

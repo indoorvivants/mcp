@@ -3,38 +3,40 @@ package mcp
 import mcp.json.*
 import java.io.{BufferedReader, InputStreamReader}
 import upickle.core.TraceVisitor.TraceException
+import scala.util.{Failure, Success, Try}
 
-class MCPBuilder private (
-    requestHandlers: Map[
-      String,
-      (ujson.Value) => ujson.Value | Error
-    ],
-    notificationHandlers: Map[
-      String,
-      (ujson.Value) => Unit
-    ]
-):
+import MCPBuilder.Opts
+
+class MCPBuilder private (opts: Opts):
+  private def copy(f: Opts => Opts) = new MCPBuilder(f(opts))
+
+  def verbose: MCPBuilder = copy(_.copy(log = true))
+
   def handleRequest(req: MCPRequest & FromClient)(
       f: req.In => req.Out | Error
-  ) =
+  ): MCPBuilder =
     val handler = (in: ujson.Value) =>
       val params = read[req.In](in)
       f(params) match
         case e: Error => writeJs(e)
         case e        => writeJs(e.asInstanceOf[req.Out])
-    new MCPBuilder(
-      requestHandlers.updated(req.method, handler),
-      notificationHandlers
+
+    copy(o =>
+      o.copy(requestHandlers = o.requestHandlers.updated(req.method, handler))
     )
   end handleRequest
 
-  def handleNotification(req: MCPNotification & FromClient)(f: req.In => Unit) =
+  def handleNotification(req: MCPNotification & FromClient)(
+      f: req.In => Unit
+  ): MCPBuilder =
     val handler = (in: ujson.Value) =>
       val params = read[req.In](in)
       f(params)
-    new MCPBuilder(
-      requestHandlers,
-      notificationHandlers.updated(req.method, handler)
+
+    copy(o =>
+      o.copy(notificationHandlers =
+        o.notificationHandlers.updated(req.method, handler)
+      )
     )
   end handleNotification
 
@@ -62,51 +64,55 @@ class MCPBuilder private (
           case _ => v
       end dropNulls
 
-      System.err.println(s"Outputting ${dropNulls(obj)}")
+      if opts.log then System.err.println(s"Outputting ${dropNulls(obj)}")
       System.out.println(write(dropNulls(obj)))
     end out
 
     var line: String = null
     while { line = reader.readLine(); line != null } do
-      val json = read[ujson.Obj](line)
-      System.err.println(s"Receiving $json")
-      if json.value.contains("id") && json.value.contains("method")
-      then // it's a request
-        val method = json.value("method").str
-        val id = json.value("id")
+      try
+        val json = read[ujson.Obj](line)
+        if opts.log then System.err.println(s"Receiving $json")
+        if json.value.contains("id") && json.value.contains("method")
+        then // it's a request
+          val method = json.value("method").str
+          val id = json.value("id")
 
-        val response =
-          handleExceptions(id):
-            requestHandlers.get(method) match
-              case None =>
-                Response(
-                  id,
-                  error = Some(
-                    Error(
-                      ErrorCode.MethodNotFound,
-                      s"Method $method is not handled"
+          val response =
+            handleExceptions(id):
+              opts.requestHandlers.get(method) match
+                case None =>
+                  Response(
+                    id,
+                    error = Some(
+                      Error(
+                        ErrorCode.MethodNotFound,
+                        s"Method $method is not handled"
+                      )
                     )
                   )
-                )
 
-              case Some(value) =>
-                value(json) match
-                  case err: Error =>
-                    Response(id, error = Some(err))
+                case Some(value) =>
+                  value(json) match
+                    case err: Error =>
+                      Response(id, error = Some(err))
 
-                  case response: ujson.Value =>
-                    Response(id, result = Some(writeJs(response)))
+                    case response: ujson.Value =>
+                      Response(id, result = Some(writeJs(response)))
 
-        out(response)
-      else
-        // it's a notification
-        val method = json.value("method").str
+          out(response)
+        else
+          // it's a notification
+          val method = json.value("method").str
 
-        notificationHandlers.get(method) match
-          case None        => // do nothing
-          case Some(value) => value(json)
+          opts.notificationHandlers.get(method) match
+            case None        => // do nothing
+            case Some(value) => value(json)
 
-      end if
+        end if
+      catch
+        case exc =>
+          System.err.println(s"Failed to parse JSON ($line): ${exc.getMessage}")
     end while
   end process
 
@@ -127,4 +133,17 @@ class MCPBuilder private (
 end MCPBuilder
 
 object MCPBuilder:
-  def create(): MCPBuilder = new MCPBuilder(Map.empty, Map.empty)
+  def create(): MCPBuilder = new MCPBuilder(Opts(Map.empty, Map.empty, false))
+
+  private case class Opts(
+      requestHandlers: Map[
+        String,
+        (ujson.Value) => ujson.Value | Error
+      ],
+      notificationHandlers: Map[
+        String,
+        (ujson.Value) => Unit
+      ],
+      log: Boolean
+  )
+end MCPBuilder
