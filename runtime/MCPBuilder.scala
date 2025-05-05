@@ -36,6 +36,9 @@ class MCPBuilder private (
 
             v
 
+          case ujson.Arr(items) => 
+            items.map(dropNulls): ujson.Arr
+
           case _ => v
       end dropNulls
 

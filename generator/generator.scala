@@ -6,10 +6,19 @@
 
 package mcp
 
-import mcp.{*, given}, json.*
+//import mcp.{*, given}, json.*
+import json.{ReadWriter, read}
 import upickle.core.TraceVisitor.TraceException
 import scala.annotation.targetName
-import rendition.*
+import rendition.{
+  LineBuilder,
+  RenderingContext,
+  Rendering,
+  block,
+  line,
+  emptyLine,
+  nest
+}
 
 enum MCPError(msg: String, tr: Throwable = null) extends Throwable(msg, tr):
   case FailureParsing(in: ujson.Value, reason: Throwable = null)
