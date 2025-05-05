@@ -18,7 +18,7 @@ def weather(city: String) =
     .right
     .get
 
-@main def hello =
+@main def getWeatherScalaMCP =
   val mcp = MCPBuilder
     .create()
     .verbose
@@ -57,5 +57,5 @@ def weather(city: String) =
           TextContent(text = weather(location), `type` = "text")
         )
       )
-    .process(System.in)
-end hello
+    .run()
+end getWeatherScalaMCP
