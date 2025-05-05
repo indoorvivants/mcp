@@ -19,6 +19,7 @@ import rendition.{
   emptyLine,
   nest
 }
+import scala.util.Try
 
 enum MCPError(msg: String, tr: Throwable = null) extends Throwable(msg, tr):
   case FailureParsing(in: ujson.Value, reason: Throwable = null)
@@ -190,10 +191,57 @@ end RenderingStreams
     "PromptMessage",
     "ListResourcesRequest",
     "ListResourcesResult",
-    "Resource"
+    "Resource",
+    "InitializedNotification",
+    "CancelledNotification",
+    "RequestId"
   )
 
-  val methods = Map.newBuilder[String, String]
+  enum Kind:
+    case Request(base: String)
+    case Notification(base: String)
+
+  enum Marker:
+    case Client
+    case Server
+
+  def getRefs(o: DefDef): List[String] =
+    Try(o.asInstanceOf[AnyOf]).toOption.toList.flatMap: o =>
+      o.anyOf.collect { case r: Ref => r.`$ref`.stripPrefix("#/definitions/") }
+
+  val clientNotifications = getRefs(schema.definitions("ClientNotification"))
+    .map(s => s.stripSuffix("Notification") -> Marker.Client)
+    .toMap
+
+  val serverNotifications = getRefs(schema.definitions("ServerNotification"))
+    .map(s => s.stripSuffix("Notification") -> Marker.Server)
+    .toMap
+
+  val clientRequests = getRefs(schema.definitions("ClientRequest"))
+    .map(s => s.stripSuffix("Request") -> Marker.Client)
+    .toMap
+
+  val serverRequests = getRefs(schema.definitions("ServerRequest"))
+    .map(s => s.stripSuffix("Request") -> Marker.Server)
+    .toMap
+
+  val all = Seq(
+    clientNotifications,
+    serverNotifications,
+    clientRequests,
+    serverRequests
+  )
+
+  val directions =
+    all.toSet
+      .flatMap(_.keySet)
+      .map: name =>
+        name -> all.flatMap(_.get(name))
+      .toMap
+
+  println(directions)
+
+  val requestMethods = Map.newBuilder[String, Kind]
 
   val synthetic = Seq(
     "PingResult" -> ObjectDefinition(`type` = "object")
@@ -211,9 +259,14 @@ end RenderingStreams
             scaladoc(defDef.description)
 
             method(defDef.properties).foreach: meth =>
-              methods += meth -> name
-                .stripSuffix("Request")
-                .stripSuffix("Result")
+              if meth.startsWith("notifications/") then
+                requestMethods += meth -> Kind.Notification(
+                  name.stripSuffix("Notification")
+                )
+              else
+                requestMethods += meth -> Kind.Request(
+                  name.stripSuffix("Request").stripSuffix("Result")
+                )
 
             renderObjectLike(name, defDef.properties, defDef.required)
 
@@ -267,19 +320,6 @@ end RenderingStreams
 
   }
 
-  println(methods.result().toSeq.sortBy(_._1))
-
-  // def rec(segments: List[String])(using RenderingContext): Unit =
-  //   segments match
-  //     case Nil => ()
-  //     case h :: t =>
-  //       val scopeName =
-  //         h match
-  //           case "$"   => "$DOLLAR"
-  //           case other => other
-  //       line(s"object $scopeName:")
-  //       nest { rec(t) }
-
   streams.in("requests"):
     case class Node(name: String, var next: Seq[Node])
 
@@ -288,7 +328,7 @@ end RenderingStreams
 
     mp("") = tree
 
-    val methodMap = methods.result()
+    val methodMap = requestMethods.result()
 
     methodMap.toSeq
       .sortBy(_._1)
@@ -304,6 +344,14 @@ end RenderingStreams
             case Some(p) => parent = p
 
         parent.next = parent.next :+ Node(segs.last, Seq.empty)
+
+    def traitName(m: Marker) = m match
+      case Marker.Client => "FromClient"
+      case Marker.Server => "FromServer"
+
+    def markerTraits(base: String) =
+      val b = directions.get(base).toSeq.flatten.map(traitName).mkString(", ")
+      if b.nonEmpty then s", $b" else ""
 
     def go(current: Node, prev: Seq[String])(using RenderingContext): Unit =
       val fullPath = (current.name +: prev).filter(_.nonEmpty)
@@ -321,12 +369,21 @@ end RenderingStreams
           methodMap
             .get(methName)
             .foreach: m =>
-              block(
-                s"object ${current.name} extends MCPRequest(\"$methName\"):",
-                ""
-              ):
-                line(s"type In = ${m}Request")
-                line(s"type Out = ${m}Result")
+              m match
+                case Kind.Request(base) =>
+
+                  block(
+                    s"object ${current.name} extends MCPRequest(\"$methName\")${markerTraits(base)}:",
+                    ""
+                  ):
+                    line(s"type In = ${base}Request")
+                    line(s"type Out = ${base}Result")
+                case Kind.Notification(base) =>
+                  block(
+                    s"object ${current.name} extends MCPNotification(\"$methName\")${markerTraits(base)}:",
+                    ""
+                  ):
+                    line(s"type In = ${base}Notification")
       else
         current.next.foreach: n =>
           go(n, fullPath)

@@ -21,7 +21,7 @@ def weather(city: String) =
 @main def hello =
   val mcp = MCPBuilder
     .create()
-    .handlePings()
+    .handleRequest(ping)(_ => PingResult())
     .handleRequest(initialize): req =>
       InitializeResult(
         capabilities =
@@ -29,6 +29,8 @@ def weather(city: String) =
         protocolVersion = req.params.protocolVersion,
         serverInfo = Implementation("scala-mcp", "0.0.1")
       )
+    .handleNotification(notifications.initialized): init =>
+      System.err.println(s"Initialized: $init")
     .handleRequest(tools.list): req =>
       ListToolsResult(
         Seq(

@@ -23,7 +23,6 @@ import mcp.*
 @main def hello =
   val mcp = MCPBuilder
     .create()
-    .handlePings()
     .handleRequest(initialize): req =>
       InitializeResult(
         capabilities =

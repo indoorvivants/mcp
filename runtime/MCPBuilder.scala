@@ -8,18 +8,35 @@ class MCPBuilder private (
     requestHandlers: Map[
       String,
       (ujson.Value) => ujson.Value | Error
+    ],
+    notificationHandlers: Map[
+      String,
+      (ujson.Value) => Unit
     ]
 ):
-  def handleRequest(req: MCPRequest)(f: req.In => req.Out | Error) =
+  def handleRequest(req: MCPRequest & FromClient)(
+      f: req.In => req.Out | Error
+  ) =
     val handler = (in: ujson.Value) =>
       val params = read[req.In](in)
       f(params) match
         case e: Error => writeJs(e)
         case e        => writeJs(e.asInstanceOf[req.Out])
-    new MCPBuilder(requestHandlers.updated(req.method, handler))
+    new MCPBuilder(
+      requestHandlers.updated(req.method, handler),
+      notificationHandlers
+    )
   end handleRequest
 
-  def handlePings() = handleRequest(ping)(req => PingResult())
+  def handleNotification(req: MCPNotification & FromClient)(f: req.In => Unit) =
+    val handler = (in: ujson.Value) =>
+      val params = read[req.In](in)
+      f(params)
+    new MCPBuilder(
+      requestHandlers,
+      notificationHandlers.updated(req.method, handler)
+    )
+  end handleNotification
 
   def process(is: java.io.InputStream) =
 
@@ -81,6 +98,14 @@ class MCPBuilder private (
                     Response(id, result = Some(writeJs(response)))
 
         out(response)
+      else
+        // it's a notification
+        val method = json.value("method").str
+
+        notificationHandlers.get(method) match
+          case None        => // do nothing
+          case Some(value) => value(json)
+
       end if
     end while
   end process
@@ -102,4 +127,4 @@ class MCPBuilder private (
 end MCPBuilder
 
 object MCPBuilder:
-  def create(): MCPBuilder = new MCPBuilder(Map.empty)
+  def create(): MCPBuilder = new MCPBuilder(Map.empty, Map.empty)
