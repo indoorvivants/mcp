@@ -8,9 +8,11 @@ At the moment the library consists of three parts:
 2. Minimal runtime to help serialising structures in JSON
 3. Minimal jsonrpc runtime implementing JSONRPC 2.0 protocol
 
-Note that the jsonrpc implementation is blocking, does not support cancellation, and is generally not designed for serious usage – but it's great to get things off the ground quickly! In the future, this library will provide an integration with [jsonrpclib](https://github.com/neandertech/jsonrpclib/), once that library is published for Scala Native 0.5 (or may be earlier, if someone works on that integration).
+Note that the jsonrpc implementation does not support cancellation, and is generally not designed for serious usage – but it's great to get things off the ground quickly! In the future, this library will provide an integration with [jsonrpclib](https://github.com/neandertech/jsonrpclib/), once that library is published for Scala Native 0.5 (or may be earlier, if someone works on that integration).
 
 ## Getting Started
+
+**Note that the library is using Scala 3.7.0 – which is generally fine for apps, as you can use any version of Scala above 3.7**
 
 This is the most minimal MCP server:
 

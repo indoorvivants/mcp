@@ -2,7 +2,7 @@
 //> using dep com.indoorvivants::rendition::0.0.4
 //> using dep com.lihaoyi::os-lib::0.11.4
 //> using dep com.lihaoyi::pprint::0.9.0
-//> using scala 3.6.4
+//> using scala 3.7.0
 
 package mcp
 

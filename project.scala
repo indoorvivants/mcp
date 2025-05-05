@@ -1,4 +1,4 @@
-//> using scala 3.6.4
+//> using scala 3.7.0
 //> using publish.computeVersion git:tag
 //> using publish.developers "velvetbaldmime|Anton Sviridov|https://indoorvivants.com"
 //> using publish.license Apache-2.0
