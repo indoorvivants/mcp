@@ -17,7 +17,7 @@ Note that the jsonrpc implementation does not support cancellation, and is gener
 This is the most minimal MCP server:
 
 ```scala
-//> using scala 3.6.4
+//> using scala 3.7.0
 //> using dep com.indoorvivants::mcp::latest.release
 
 import mcp.*
