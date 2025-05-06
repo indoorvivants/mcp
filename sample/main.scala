@@ -21,19 +21,21 @@ def weather(city: String) =
   val mcp = MCPBuilder
     .create()
     .verbose
-    .handleRequest(ping)(_ => PingResult())
-    .handleRequest(initialize): req =>
+    .handle(ping)(_ => PingResult())
+    .handle(initialize): req =>
       InitializeResult(
         capabilities =
           ServerCapabilities(tools = Some(ServerCapabilities.Tools())),
         protocolVersion = req.params.protocolVersion,
         serverInfo = Implementation("get-weather-scala-mcp", "0.0.1")
       )
-    .handleNotification(notifications.initialized): n =>
+    .handle(notifications.initialized): n =>
+      // Send notifications to the client
       communicate.notification(
         notifications.tools.list_changed,
         ToolListChangedNotification()
       )
+      // Send requests and receive responses from the client
       System.err.println(
         communicate.request(
           sampling.createMessage,
@@ -50,7 +52,7 @@ def weather(city: String) =
           )
         )
       )
-    .handleRequest(tools.list): _ =>
+    .handle(tools.list): _ =>
       ListToolsResult(
         Seq(
           Tool(
@@ -68,7 +70,7 @@ def weather(city: String) =
           )
         )
       )
-    .handleRequest(tools.call): req =>
+    .handle(tools.call): req =>
       val location = req.params.arguments.get.obj("location").str
       CallToolResult(content =
         Seq(

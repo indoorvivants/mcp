@@ -12,9 +12,7 @@ Note that the jsonrpc implementation does not support cancellation, and is gener
 
 ## Getting Started
 
-**Note that the library is using Scala 3.7.0 – which is generally fine for apps, as you can use any version of Scala above 3.7**
-
-This is the most minimal MCP server:
+**Note that the library is using Scala 3.7 – which is generally fine for apps, as you can use any version of Scala above 3.7**
 
 ```scala
 //> using scala 3.7.0
@@ -25,7 +23,7 @@ import mcp.*
 @main def hello =
   val mcp = MCPBuilder
     .create()
-    .handleRequest(initialize): req =>
+    .handle(initialize): req =>
       InitializeResult(
         capabilities =
           ServerCapabilities(tools = Some(ServerCapabilities.Tools())),
@@ -34,7 +32,6 @@ import mcp.*
       )
     .run()
 end hello
-
 ```
 
 Save it in a `mcp.scala` file and run it with MCP Inspector:
@@ -42,6 +39,8 @@ Save it in a `mcp.scala` file and run it with MCP Inspector:
 ```bash
 npx @modelcontextprotocol/inspector scala-cli run mcp.scala
 ```
+
+For a more involved example, containing tool usage and bi-directional communication, see the [sample](./sample/main.scala).
 
 ## See it in action
 

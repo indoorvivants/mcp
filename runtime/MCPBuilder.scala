@@ -20,6 +20,7 @@ import MCPBuilder.Opts
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
+import scala.annotation.targetName
 
 trait Communicate:
   def notification[X <: MCPNotification](notif: X, in: notif.In): Unit
@@ -52,7 +53,7 @@ class MCPBuilder private (opts: Opts):
 
   def in(is: InputStream): MCPBuilder = copy(_.copy(in = is))
 
-  def handleRequest(req: MCPRequest & FromClient)(
+  def handle(req: MCPRequest & FromClient)(
       f: Communicate ?=> req.In => req.Out | Error
   ): MCPBuilder =
     val handler = (c: Communicate) ?=>
@@ -65,9 +66,10 @@ class MCPBuilder private (opts: Opts):
     copy(o =>
       o.copy(requestHandlers = o.requestHandlers.updated(req.method, handler))
     )
-  end handleRequest
+  end handle
 
-  def handleNotification(req: MCPNotification & FromClient)(
+  @targetName("handleNotification")
+  def handle(req: MCPNotification & FromClient)(
       f: Communicate ?=> req.In => Unit
   ): MCPBuilder =
     val handler = (c: Communicate) ?=>
@@ -80,7 +82,7 @@ class MCPBuilder private (opts: Opts):
         o.notificationHandlers.updated(req.method, handler)
       )
     )
-  end handleNotification
+  end handle
 
   protected opaque type Id <: ujson.Value = ujson.Value
   protected opaque type ResponseParams <: ujson.Value = ujson.Value
