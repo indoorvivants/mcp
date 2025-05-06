@@ -2,6 +2,7 @@
 //> using dep com.softwaremill.sttp.client4::upickle::4.0.3
 //> using scala 3.7.0
 //> using option -Wunused:all
+//> using jvm 24
 
 import mcp.*
 import sttp.client4.*
