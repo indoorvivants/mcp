@@ -1,12 +1,11 @@
 //> using dep com.softwaremill.sttp.client4::core::4.0.3
 //> using dep com.softwaremill.sttp.client4::upickle::4.0.3
 //> using scala 3.7.0
+//> using option -Wunused:all
 
 import mcp.*
 import upickle.default.*
-
 import sttp.client4.*
-import sttp.client4.upicklejson.default.*
 
 val backend = DefaultSyncBackend()
 
@@ -28,11 +27,30 @@ def weather(city: String) =
         capabilities =
           ServerCapabilities(tools = Some(ServerCapabilities.Tools())),
         protocolVersion = req.params.protocolVersion,
-        serverInfo = Implementation("scala-mcp", "0.0.1")
+        serverInfo = Implementation("get-weather-scala-mcp", "0.0.1")
       )
-    .handleNotification(notifications.initialized): init =>
-      System.err.println(s"Initialized: $init")
-    .handleRequest(tools.list): req =>
+    .handleNotification(notifications.initialized): n =>
+      communicate.notification(
+        notifications.tools.list_changed,
+        ToolListChangedNotification()
+      )
+      System.err.println(
+        communicate.request(
+          sampling.createMessage,
+          CreateMessageRequest(
+            params = CreateMessageRequest.Params(
+              maxTokens = 500,
+              messages = Seq(
+                SamplingMessage(
+                  TextContent("what is the meaning of life?"),
+                  role = Role.user
+                )
+              )
+            )
+          )
+        )
+      )
+    .handleRequest(tools.list): _ =>
       ListToolsResult(
         Seq(
           Tool(
