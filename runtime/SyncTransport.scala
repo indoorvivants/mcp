@@ -13,18 +13,37 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.Executors
 
+/** A synchronous transport implementation for MCP, using STDIN. To maintain the
+  * ability to concurrently process requests, this implementation uses an
+  * [[Executor]], submitting each request handling as a task. By default,
+  * `ExecutionContext.global` is used (a ForkJoinPool).
+  *
+  * On modern JDKs, it is recommended to use VirtualThread executor (e.g.
+  * `.executor(Executors.newVirtualThreadPerTaskExecutor())`).
+  *
+  * This transport does not support cancellation and will block threads.
+  */
 class SyncTransport private (opts: SyncTransport.Opts) extends Transport[Unit]:
 
   override type F[A] = A
 
+  /** Enable logging request/response bodies to STDERR */
   def verbose: SyncTransport = copy(_.copy(log = true))
 
+  /** Change default executor used for running handlers. Using a single threaded
+    * executor is NOT recommended.
+    */
   def executor(e: Executor): SyncTransport = copy(_.copy(executor = e))
 
+  /** Change default output stream used for writing responses */
   def out(os: OutputStream): SyncTransport = copy(_.copy(out = os))
 
+  /** Change default input stream used for reading requests/notifications */
   def in(is: InputStream): SyncTransport = copy(_.copy(in = is))
 
+  /** Attach to input and output streams, processing requests and BLOCKING until
+    * input stream is closed
+    */
   override def run(
       requestHandlers: Map[
         String,

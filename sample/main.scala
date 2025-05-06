@@ -5,6 +5,7 @@
 
 import mcp.*
 import sttp.client4.*
+import java.util.concurrent.Executors
 
 val backend = DefaultSyncBackend()
 
@@ -73,5 +74,8 @@ def weather(city: String) =
           TextContent(text = weather(location), `type` = "text")
         )
       )
-    .run(SyncTransport())
+    .run(
+      SyncTransport.default.verbose
+        .executor(Executors.newVirtualThreadPerTaskExecutor())
+    )
 end getWeatherScalaMCP

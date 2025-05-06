@@ -30,7 +30,7 @@ import mcp.*
         protocolVersion = req.params.protocolVersion,
         serverInfo = Implementation("scala-mcp", "0.0.1")
       )
-    .run()
+    .run(SyncTransport.default)
 end hello
 ```
 
