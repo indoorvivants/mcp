@@ -3,8 +3,6 @@ package mcp
 import annotation.targetName
 import upickle.core.TraceVisitor.TraceException
 import scala.reflect.TypeTest
-import upickle.core.Visitor
-import upickle.core.Annotator.Checker
 
 object json extends upickle.AttributeTagged:
   override def optionsAsNulls: Boolean = true

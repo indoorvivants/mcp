@@ -1,91 +1,19 @@
 package mcp
 
 import mcp.json.*
-import upickle.core.TraceVisitor.TraceException
-
-import java.io.BufferedReader
-import java.io.InputStream
-import java.io.InputStreamReader
-import java.io.OutputStream
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Executor
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
 import scala.annotation.targetName
-import scala.concurrent.ExecutionContext
 
-import MCPBuilder.Opts
-import scala.concurrent.duration.*
+type Id[A] = A
 
-class RequestOptions private (opts: RequestOptions.Opts):
-  import RequestOptions.*
-  private def copy(f: Opts => Opts) = new RequestOptions(f(opts))
-
-  def timeout = opts.timeout
-
-  def withTimeout(dur: Duration): RequestOptions = copy(
-    _.copy(timeout = Some(dur))
-  )
-  def noTimeout: RequestOptions = copy(_.copy(timeout = None))
-end RequestOptions
-
-object RequestOptions:
-  val default = apply().withTimeout(10.seconds)
-
-  def apply(): RequestOptions = new RequestOptions(Opts())
-
-  private[mcp] case class Opts(
-      timeout: Option[Duration] = Some(10.seconds)
-  )
-
-end RequestOptions
-
-trait Communicate:
-  def notification[X <: MCPNotification & FromServer](
-      notif: X,
-      in: notif.In
-  ): Unit
-  def request[X <: MCPRequest & FromServer](
-      req: X,
-      in: req.In,
-      options: RequestOptions
-  ): req.Out | Error
-
-  def request[X <: MCPRequest & FromServer](
-      req: PreparedRequest[X],
-      options: RequestOptions = RequestOptions.default
-  ): req.Out | Error =
-    this.request[X](req.x, req.in, options)
-
-  def notification[X <: MCPNotification & FromServer](
-      req: PreparedNotification[X]
-  ): Unit =
-    this.notification[X](req.x, req.in)
-end Communicate
-
-inline def communicate(using comm: Communicate) = comm
-
-class PreparedRequest[X <: MCPRequest](val x: X, val in: x.In):
-  type Out = x.Out
-
-class PreparedNotification[X <: MCPNotification](val x: X, val in: x.In)
-
-class MCPBuilder private (opts: Opts):
+class MCPBuilder private (opts: MCPBuilder.Opts):
+  self =>
+  import MCPBuilder.*
   private def copy(f: Opts => Opts) = new MCPBuilder(f(opts))
 
-  def verbose: MCPBuilder = copy(_.copy(log = true))
-
-  def executor(e: Executor): MCPBuilder = copy(_.copy(executor = e))
-
-  def out(os: OutputStream): MCPBuilder = copy(_.copy(out = os))
-
-  def in(is: InputStream): MCPBuilder = copy(_.copy(in = is))
-
   def handle(req: MCPRequest & FromClient)(
-      f: Communicate ?=> req.In => req.Out | Error
+      f: Communicate[Id, FromServer] ?=> req.In => req.Out | Error
   ): MCPBuilder =
-    val handler = (c: Communicate) ?=>
+    val handler = (c: Communicate[Id, FromServer]) ?=>
       (in: ujson.Value) =>
         val params = read[req.In](in)
         f(params) match
@@ -99,9 +27,9 @@ class MCPBuilder private (opts: Opts):
 
   @targetName("handleNotification")
   def handle(req: MCPNotification & FromClient)(
-      f: Communicate ?=> req.In => Unit
+      f: Communicate[Id, FromServer] ?=> req.In => Unit
   ): MCPBuilder =
-    val handler = (c: Communicate) ?=>
+    val handler = (c: Communicate[Id, FromServer]) ?=>
       (in: ujson.Value) =>
         val params = read[req.In](in)
         f(params)
@@ -113,170 +41,8 @@ class MCPBuilder private (opts: Opts):
     )
   end handle
 
-  protected opaque type Id <: ujson.Value = ujson.Value
-  protected opaque type ResponseParams <: ujson.Value = ujson.Value
-
-  private val serverRequestCounter = new AtomicInteger(1)
-
-  private def genId() = ujson.Num(serverRequestCounter.getAndIncrement())
-
-  def run(): Unit =
-    val reader = new BufferedReader(new InputStreamReader(opts.in))
-    val pending = new ConcurrentHashMap[Id, CompletableFuture[ResponseParams]]
-
-    given Communicate:
-      override def request[X <: MCPRequest & FromServer](
-          req: X,
-          in: req.In,
-          options: RequestOptions
-      ): req.Out | Error =
-        val id = genId()
-        val params = writeJs(in)
-        params("id") = id
-        out(params) // Write the request parameters to the output stream
-        val fut = new CompletableFuture[ResponseParams]()
-        pending.put(id, fut)
-        options.timeout.foreach: dur =>
-          fut.completeOnTimeout(ujson.Null, dur.toMillis, TimeUnit.MILLISECONDS)
-        val response = fut.get() // N.B.: will block until response is received
-        if response == ujson.Null then
-          Error(
-            ErrorCode.InternalError,
-            s"Timed out after waiting for response for request $id"
-          )
-        else if response.obj.contains("error") then
-          read[Error](response("error"))
-        else read[req.Out](response("result"))
-        end if
-
-      end request
-
-      override def notification[X <: MCPNotification & FromServer](
-          notif: X,
-          in: notif.In
-      ): Unit = out(in)
-    end given
-
-    def processClientResponse(id: Id, response: ResponseParams) =
-      val n = pending.remove(id)
-      if n != null then n.complete(response)
-      else err(s"Received a response $response for an unknown request $id")
-
-    var line: String = null
-    while { line = reader.readLine(); line != null } do
-      opts.executor.execute(() => handleLine(line, processClientResponse))
-    end while
-  end run
-
-  private def out[J: Writer](j: J) =
-    val obj = writeJs(j)
-    obj("jsonrpc") = "2.0"
-
-    def dropNulls(v: ujson.Value): ujson.Value =
-      v match
-        case ujson.Obj(fields) =>
-
-          val v: ujson.Obj = fields.flatMap: (k, v) =>
-            if v == ujson.Null then None
-            else Some(k -> dropNulls(v))
-
-          v
-
-        case ujson.Arr(items) =>
-          items.map(dropNulls): ujson.Arr
-
-        case _ => v
-    end dropNulls
-
-    if opts.log then err(s"Outputting ${dropNulls(obj)}")
-
-    output(write(dropNulls(obj)))
-  end out
-
-  private def handleLine(
-      line: String,
-      processClientResponse: (Id, ResponseParams) => Unit
-  )(using Communicate) =
-    try
-      val json = read[ujson.Obj](line)
-      if opts.log then err(s"Receiving $json")
-      (
-        hasId = json.value.contains("id"),
-        hasMethod = json.value.contains("method")
-      ) match
-        case (hasId = true, hasMethod = true) =>
-          val method = json.value("method").str
-          val id = json.value("id")
-
-          val response =
-            handleExceptions(id):
-              opts.requestHandlers.get(method) match
-                case None =>
-                  Response(
-                    id,
-                    error = Some(
-                      Error(
-                        ErrorCode.MethodNotFound,
-                        s"Method $method is not handled"
-                      )
-                    )
-                  )
-
-                case Some(handler) =>
-                  handler(json) match
-                    case err: Error =>
-                      Response(id, error = Some(err))
-
-                    case response: ujson.Value =>
-                      Response(id, result = Some(writeJs(response)))
-
-          out(response)
-
-        case (hasId = false, hasMethod = true) =>
-          val method = json.value("method").str
-
-          opts.notificationHandlers.get(method) match
-            case None        => // do nothing
-            case Some(value) => value(json)
-
-        case (hasId = true, hasMethod = false) =>
-          // it's a response from client
-          processClientResponse(json.value("id"), json)
-
-        case _ =>
-          err(
-            s"Failed to interpret JSON ($line) as request/response/notification"
-          )
-
-      end match
-    catch
-      case exc =>
-        err(s"Failed to parse JSON ($line): ${exc.getMessage}")
-
-  private def err(msg: String) =
-    this.synchronized:
-      opts.err.write(msg.getBytes)
-      opts.err.write('\n')
-
-  private def output(msg: String) =
-    this.synchronized:
-      opts.out.write(msg.getBytes)
-      opts.out.write('\n')
-
-  private def handleExceptions[T](id: ujson.Value)(f: => Response) =
-    try f
-    catch
-      case e: TraceException =>
-        Response(
-          id,
-          error = Some(Error(ErrorCode.InvalidRequest, e.getMessage))
-        )
-      case e =>
-        Response(
-          id,
-          error = Some(Error(ErrorCode.InternalError, e.getMessage))
-        )
-
+  def run[A](transport: Transport[A] { type F[X] = X }): A =
+    transport.run(opts.requestHandlers, opts.notificationHandlers)
 end MCPBuilder
 
 object MCPBuilder:
@@ -284,12 +50,7 @@ object MCPBuilder:
     new MCPBuilder(
       Opts(
         Map.empty,
-        Map.empty,
-        false,
-        ExecutionContext.global,
-        System.in,
-        System.out,
-        System.err
+        Map.empty
       )
     )
   end create
@@ -297,16 +58,11 @@ object MCPBuilder:
   private case class Opts(
       requestHandlers: Map[
         String,
-        Communicate ?=> (ujson.Value) => ujson.Value | Error
+        Communicate[Id, FromServer] ?=> (ujson.Value) => ujson.Value | Error
       ],
       notificationHandlers: Map[
         String,
-        Communicate ?=> (ujson.Value) => Unit
-      ],
-      log: Boolean,
-      executor: Executor,
-      in: InputStream,
-      out: OutputStream,
-      err: OutputStream
+        Communicate[Id, FromServer] ?=> (ujson.Value) => Unit
+      ]
   )
 end MCPBuilder

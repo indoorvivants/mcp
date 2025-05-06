@@ -9,9 +9,6 @@ trait MCPRequest(val method: String):
 
   given ReadWriter[In] = compiletime.deferred
   given ReadWriter[Out] = compiletime.deferred
-
-  def apply(in: In): PreparedRequest[self.type] =
-    PreparedRequest(self, in)
 end MCPRequest
 
 trait FromClient
@@ -22,7 +19,4 @@ trait MCPNotification(val method: String):
   type In
 
   given ReadWriter[In] = compiletime.deferred
-
-  def apply(in: In): PreparedNotification[self.type] =
-    PreparedNotification(self, in)
 end MCPNotification

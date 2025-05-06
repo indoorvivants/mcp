@@ -2,7 +2,6 @@ package mcp
 
 import mcp.{*, given}
 
-import java.io.{BufferedReader, InputStreamReader}
 import mcp.json.*
 
 case class Request(

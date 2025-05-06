@@ -19,7 +19,6 @@ def weather(city: String) =
 @main def getWeatherScalaMCP =
   MCPBuilder
     .create()
-    .verbose
     .handle(ping)(_ => PingResult())
     .handle(initialize): req =>
       InitializeResult(
@@ -30,21 +29,19 @@ def weather(city: String) =
       )
     .handle(notifications.initialized): _ =>
       // Send notifications to the client
-      communicate.notification(
-        notifications.tools.list_changed(ToolListChangedNotification())
+      communicate.notification(notifications.tools.list_changed)(
+        ToolListChangedNotification()
       )
       // Send requests and receive responses from the client
       System.err.println(
-        communicate.request(
-          sampling.createMessage(
-            CreateMessageRequest(
-              params = CreateMessageRequest.Params(
-                maxTokens = 500,
-                messages = Seq(
-                  SamplingMessage(
-                    TextContent("what is the meaning of life?"),
-                    role = Role.user
-                  )
+        communicate.request(sampling.createMessage)(
+          CreateMessageRequest(
+            params = CreateMessageRequest.Params(
+              maxTokens = 500,
+              messages = Seq(
+                SamplingMessage(
+                  TextContent("what is the meaning of life?"),
+                  role = Role.user
                 )
               )
             )
@@ -76,5 +73,5 @@ def weather(city: String) =
           TextContent(text = weather(location), `type` = "text")
         )
       )
-    .run()
+    .run(SyncTransport())
 end getWeatherScalaMCP
