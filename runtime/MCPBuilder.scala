@@ -7,31 +7,56 @@ import java.io.BufferedReader
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.io.OutputStream
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executor
-import java.util.concurrent.Executors
-import java.util.concurrent.ForkJoinPool
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
+import scala.annotation.targetName
 import scala.concurrent.ExecutionContext
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
 
 import MCPBuilder.Opts
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeUnit
-import scala.annotation.targetName
+import scala.concurrent.duration.*
+
+class RequestOptions private (opts: RequestOptions.Opts):
+  import RequestOptions.*
+  private def copy(f: Opts => Opts) = new RequestOptions(f(opts))
+
+  def timeout = opts.timeout
+
+  def withTimeout(dur: Duration): RequestOptions = copy(
+    _.copy(timeout = Some(dur))
+  )
+  def noTimeout: RequestOptions = copy(_.copy(timeout = None))
+end RequestOptions
+
+object RequestOptions:
+  val default = apply().withTimeout(10.seconds)
+
+  def apply(): RequestOptions = new RequestOptions(Opts())
+
+  private[mcp] case class Opts(
+      timeout: Option[Duration] = Some(10.seconds)
+  )
+
+end RequestOptions
 
 trait Communicate:
   def notification[X <: MCPNotification & FromServer](
       notif: X,
       in: notif.In
   ): Unit
-  def request[X <: MCPRequest & FromServer](req: X, in: req.In): req.Out | Error
+  def request[X <: MCPRequest & FromServer](
+      req: X,
+      in: req.In,
+      options: RequestOptions
+  ): req.Out | Error
 
-  def request[X <: MCPRequest & FromServer](req: PreparedRequest[X]): req.Out |
-    Error =
-    this.request[X](req.x, req.in)
+  def request[X <: MCPRequest & FromServer](
+      req: PreparedRequest[X],
+      options: RequestOptions = RequestOptions.default
+  ): req.Out | Error =
+    this.request[X](req.x, req.in, options)
 
   def notification[X <: MCPNotification & FromServer](
       req: PreparedNotification[X]
@@ -102,7 +127,8 @@ class MCPBuilder private (opts: Opts):
     given Communicate:
       override def request[X <: MCPRequest & FromServer](
           req: X,
-          in: req.In
+          in: req.In,
+          options: RequestOptions
       ): req.Out | Error =
         val id = genId()
         val params = writeJs(in)
@@ -110,7 +136,8 @@ class MCPBuilder private (opts: Opts):
         out(params) // Write the request parameters to the output stream
         val fut = new CompletableFuture[ResponseParams]()
         pending.put(id, fut)
-        fut.completeOnTimeout(ujson.Null, 30000, TimeUnit.MILLISECONDS)
+        options.timeout.foreach: dur =>
+          fut.completeOnTimeout(ujson.Null, dur.toMillis, TimeUnit.MILLISECONDS)
         val response = fut.get() // N.B.: will block until response is received
         if response == ujson.Null then
           Error(
@@ -131,7 +158,9 @@ class MCPBuilder private (opts: Opts):
     end given
 
     def processClientResponse(id: Id, response: ResponseParams) =
-      pending.remove(id).complete(response)
+      val n = pending.remove(id)
+      if n != null then n.complete(response)
+      else err(s"Received a response $response for an unknown request $id")
 
     var line: String = null
     while { line = reader.readLine(); line != null } do
