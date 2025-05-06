@@ -4,7 +4,6 @@
 //> using option -Wunused:all
 
 import mcp.*
-import upickle.default.*
 import sttp.client4.*
 
 val backend = DefaultSyncBackend()
@@ -18,7 +17,7 @@ def weather(city: String) =
     .get
 
 @main def getWeatherScalaMCP =
-  val mcp = MCPBuilder
+  MCPBuilder
     .create()
     .verbose
     .handle(ping)(_ => PingResult())
@@ -29,23 +28,23 @@ def weather(city: String) =
         protocolVersion = req.params.protocolVersion,
         serverInfo = Implementation("get-weather-scala-mcp", "0.0.1")
       )
-    .handle(notifications.initialized): n =>
+    .handle(notifications.initialized): _ =>
       // Send notifications to the client
       communicate.notification(
-        notifications.tools.list_changed,
-        ToolListChangedNotification()
+        notifications.tools.list_changed(ToolListChangedNotification())
       )
       // Send requests and receive responses from the client
       System.err.println(
         communicate.request(
-          sampling.createMessage,
-          CreateMessageRequest(
-            params = CreateMessageRequest.Params(
-              maxTokens = 500,
-              messages = Seq(
-                SamplingMessage(
-                  TextContent("what is the meaning of life?"),
-                  role = Role.user
+          sampling.createMessage(
+            CreateMessageRequest(
+              params = CreateMessageRequest.Params(
+                maxTokens = 500,
+                messages = Seq(
+                  SamplingMessage(
+                    TextContent("what is the meaning of life?"),
+                    role = Role.user
+                  )
                 )
               )
             )

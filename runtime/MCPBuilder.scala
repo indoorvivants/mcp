@@ -23,13 +23,17 @@ import java.util.concurrent.TimeUnit
 import scala.annotation.targetName
 
 trait Communicate:
-  def notification[X <: MCPNotification](notif: X, in: notif.In): Unit
-  def request[X <: MCPRequest](req: X, in: req.In): req.Out | Error
+  def notification[X <: MCPNotification & FromServer](
+      notif: X,
+      in: notif.In
+  ): Unit
+  def request[X <: MCPRequest & FromServer](req: X, in: req.In): req.Out | Error
 
-  def request[X <: MCPRequest](req: PreparedRequest[X]): req.Out | Error =
+  def request[X <: MCPRequest & FromServer](req: PreparedRequest[X]): req.Out |
+    Error =
     this.request[X](req.x, req.in)
 
-  def notification[X <: MCPNotification](
+  def notification[X <: MCPNotification & FromServer](
       req: PreparedNotification[X]
   ): Unit =
     this.notification[X](req.x, req.in)
@@ -96,8 +100,10 @@ class MCPBuilder private (opts: Opts):
     val pending = new ConcurrentHashMap[Id, CompletableFuture[ResponseParams]]
 
     given Communicate:
-      override def request[X <: MCPRequest](req: X, in: req.In): req.Out |
-        Error =
+      override def request[X <: MCPRequest & FromServer](
+          req: X,
+          in: req.In
+      ): req.Out | Error =
         val id = genId()
         val params = writeJs(in)
         params("id") = id
@@ -118,7 +124,7 @@ class MCPBuilder private (opts: Opts):
 
       end request
 
-      override def notification[X <: MCPNotification](
+      override def notification[X <: MCPNotification & FromServer](
           notif: X,
           in: notif.In
       ): Unit = out(in)
