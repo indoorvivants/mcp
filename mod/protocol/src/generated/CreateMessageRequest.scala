@@ -14,6 +14,9 @@ case class CreateMessageRequest(
 
 object CreateMessageRequest:
   case class Params(
+      /** The maximum number of tokens to sample, as requested by the server.
+        * The client MAY choose to sample fewer tokens than requested.
+        */
       maxTokens: Int,
       messages: Seq[mcp.SamplingMessage],
       /** A request to include context from one or more MCP servers (including

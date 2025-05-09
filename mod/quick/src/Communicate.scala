@@ -1,4 +1,6 @@
-package mcp
+package mcp.quick
+
+import mcp.*, json.*
 
 inline def communicate[F[_], Origin <: FromServer | FromClient](using
     comm: Communicate[F, Origin]
@@ -16,3 +18,6 @@ trait Communicate[F[_], Origin <: (FromServer | FromClient)]:
       in: req.In
   ): F[req.Out | Error]
 end Communicate
+
+trait ServerToClient[F[_]] extends Communicate[F, FromServer]
+trait ClientToServer[F[_]] extends Communicate[F, FromClient]

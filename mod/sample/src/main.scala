@@ -1,10 +1,4 @@
-//> using dep com.softwaremill.sttp.client4::core::4.0.3
-//> using dep com.softwaremill.sttp.client4::upickle::4.0.3
-//> using scala 3.7.0
-//> using option -Wunused:all
-//> using jvm 24
-
-import mcp.*
+import mcp.*, quick.*
 import sttp.client4.*
 import java.util.concurrent.Executors
 
@@ -77,6 +71,5 @@ def weather(city: String) =
       )
     .run(
       SyncTransport.default.verbose
-        .executor(Executors.newVirtualThreadPerTaskExecutor())
     )
 end getWeatherScalaMCP

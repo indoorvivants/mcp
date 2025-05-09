@@ -1,6 +1,8 @@
-package mcp
+package mcp.quick
 
 import mcp.json.*
+import mcp.*
+
 import upickle.core.TraceVisitor.TraceException
 import java.io.BufferedReader
 import java.io.InputStream
@@ -12,45 +14,39 @@ import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.Executors
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext
 
-/** A synchronous transport implementation for MCP, using STDIN. To maintain the
-  * ability to concurrently process requests, this implementation uses an
-  * [[Executor]], submitting each request handling as a task. By default,
-  * `ExecutionContext.global` is used (a ForkJoinPool).
-  *
-  * On modern JDKs, it is recommended to use VirtualThread executor (e.g.
-  * `.executor(Executors.newVirtualThreadPerTaskExecutor())`).
-  *
-  * This transport does not support cancellation and will block threads.
-  */
-class SyncTransport private (opts: SyncTransport.Opts) extends Transport[Unit]:
+class AsyncTransport private (opts: AsyncTransport.Opts)
+    extends Transport[Future[Unit]]:
 
-  override type F[A] = A
+  override type F[A] = Future[A]
 
   /** Enable logging request/response bodies to STDERR */
-  def verbose: SyncTransport = copy(_.copy(log = true))
+  def verbose: AsyncTransport = copy(_.copy(log = true))
 
   /** Change default executor used for running handlers. Using a single threaded
     * executor is NOT recommended.
     */
-  def executor(e: Executor): SyncTransport = copy(_.copy(executor = e))
+  def executor(e: Executor): AsyncTransport = copy(_.copy(executor = e))
 
   /** Change default output stream used for writing responses */
-  def out(os: OutputStream): SyncTransport = copy(_.copy(out = os))
+  def out(os: OutputStream): AsyncTransport = copy(_.copy(out = os))
 
   /** Change default input stream used for reading requests/notifications */
-  def in(is: InputStream): SyncTransport = copy(_.copy(in = is))
+  def in(is: InputStream): AsyncTransport = copy(_.copy(in = is))
 
   /** Attach to input and output streams, processing requests and BLOCKING until
     * input stream is closed
     */
-  override def run(endpoints: ServerEndpoints[F]): Unit =
-
+  override def run(endpoints: ServerEndpoints[Future]): Future[Unit] =
     val reader = new BufferedReader(new InputStreamReader(opts.in))
     val pending =
       new ConcurrentHashMap[RpcId, CompletableFuture[ResponseParams]]
 
-    given Communicate[Id, FromServer]:
+    given ec: ExecutionContext = ExecutionContext.fromExecutor(opts.executor)
+
+    val comm: ServerToClient[Id] = new:
       override def request[X <: MCPRequest & FromServer](
           req: X,
           options: RequestOptions = RequestOptions.default
@@ -79,23 +75,37 @@ class SyncTransport private (opts: SyncTransport.Opts) extends Transport[Unit]:
       override def notification[X <: MCPNotification & FromServer](notif: X)(
           in: notif.In
       ): Unit = out(in)
-    end given
+    end comm
 
     def processClientResponse(id: RpcId, response: ResponseParams) =
       val n = pending.remove(id)
       if n != null then n.complete(response)
       else err(s"Received a response $response for an unknown request $id")
 
-    var line: String = null
-    while { line = reader.readLine(); line != null } do
-      opts.executor.execute(() =>
-        handleLine(
-          line,
-          processClientResponse,
-          endpoints
-        )
+    given ServerToClient[Future]:
+      override def notification[X <: MCPNotification & FromServer](notif: X)(
+          in: notif.In
+      ): Future[Unit] = Future(comm.notification[X](notif)(in))
+
+      override def request[X <: MCPRequest & FromServer](
+          req: X,
+          options: RequestOptions
+      )(in: req.In): Future[req.Out | Error] = Future(
+        comm.request(req, options)(in)
       )
-    end while
+    end given
+
+    Future:
+      var line: String = null
+      while { line = reader.readLine(); line != null } do
+        opts.executor.execute(() =>
+          handleLine(
+            line,
+            processClientResponse,
+            endpoints
+          )
+        )
+      end while
 
   end run
 
@@ -134,8 +144,8 @@ class SyncTransport private (opts: SyncTransport.Opts) extends Transport[Unit]:
   private def handleLine(
       line: String,
       processClientResponse: (RpcId, ResponseParams) => Unit,
-      endpoints: ServerEndpoints[Id]
-  )(using Communicate[Id, FromServer]) =
+      endpoints: ServerEndpoints[Future]
+  )(using ServerToClient[Future], ExecutionContext) =
     try
       val json = read[ujson.Obj](line)
       if opts.log then err(s"Receiving $json")
@@ -147,29 +157,31 @@ class SyncTransport private (opts: SyncTransport.Opts) extends Transport[Unit]:
           val method = json.value("method").str
           val id = json.value("id")
 
-          val response =
+          val response: Future[Response] =
             handleExceptions(id):
               endpoints.requestHandlers.get(method) match
                 case None =>
-                  Response(
-                    id,
-                    error = Some(
-                      Error(
-                        ErrorCode.MethodNotFound,
-                        s"Method $method is not handled"
+                  Future.successful(
+                    Response(
+                      id,
+                      error = Some(
+                        Error(
+                          ErrorCode.MethodNotFound,
+                          s"Method $method is not handled"
+                        )
                       )
                     )
                   )
 
                 case Some(handler) =>
-                  handler(json) match
+                  handler(json).map:
                     case err: Error =>
                       Response(id, error = Some(err))
 
                     case response: ujson.Value =>
                       Response(id, result = Some(writeJs(response)))
 
-          out(response)
+          response.foreach(out)
 
         case (hasId = false, hasMethod = true) =>
           val method = json.value("method").str
@@ -202,26 +214,34 @@ class SyncTransport private (opts: SyncTransport.Opts) extends Transport[Unit]:
       opts.out.write(msg.getBytes)
       opts.out.write('\n')
 
-  private def handleExceptions[T](id: ujson.Value)(f: => Response) =
+  private def handleExceptions[T](id: ujson.Value)(using
+      ExecutionContext
+  )(f: => Future[Response]) =
     try f
     catch
       case e: TraceException =>
-        Response(
-          id,
-          error = Some(Error(ErrorCode.InvalidRequest, e.getMessage))
+        Future.successful(
+          Response(
+            id,
+            error = Some(Error(ErrorCode.InvalidRequest, e.getMessage))
+          )
         )
       case e =>
-        Response(
-          id,
-          error = Some(Error(ErrorCode.InternalError, e.getMessage))
+        Future.successful(
+          Response(
+            id,
+            error = Some(Error(ErrorCode.InternalError, e.getMessage))
+          )
         )
 
-  private def copy(f: SyncTransport.Opts => SyncTransport.Opts): SyncTransport =
-    new SyncTransport(f(opts))
-end SyncTransport
+  private def copy(
+      f: AsyncTransport.Opts => AsyncTransport.Opts
+  ): AsyncTransport =
+    new AsyncTransport(f(opts))
+end AsyncTransport
 
-object SyncTransport:
-  val default = new SyncTransport(
+object AsyncTransport:
+  val default = new AsyncTransport(
     Opts(
       false,
       Executors.newSingleThreadExecutor(),
@@ -231,7 +251,7 @@ object SyncTransport:
     )
   )
 
-  def apply(): SyncTransport = default
+  def apply(): AsyncTransport = default
 
   private case class Opts(
       log: Boolean,
@@ -240,4 +260,4 @@ object SyncTransport:
       out: OutputStream,
       err: OutputStream
   )
-end SyncTransport
+end AsyncTransport

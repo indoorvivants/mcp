@@ -14,11 +14,11 @@ Note that the jsonrpc implementation does not support cancellation, and is gener
 
 **Note that the library is using Scala 3.7 – which is generally fine for apps, as you can use any version of Scala above 3.7**
 
-```scala
+```scala mdoc:reset-object
 //> using scala 3.7.0
-//> using dep com.indoorvivants::mcp::latest.release
+//> using dep com.indoorvivants::mcp-quick::latest.release
 
-import mcp.*
+import mcp.*, quick.*
 
 @main def hello =
   val mcp = MCPBuilder

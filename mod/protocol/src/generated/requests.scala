@@ -1,5 +1,10 @@
 package mcp
 
+object completion:
+  object complete extends MCPRequest("completion/complete"), FromClient:
+    type In = CompleteRequest
+    type Out = CompleteResult
+
 object initialize extends MCPRequest("initialize"), FromClient:
   type In = InitializeRequest
   type Out = InitializeResult

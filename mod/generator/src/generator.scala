@@ -1,6 +1,5 @@
 package mcp
 
-//import mcp.{*, given}, json.*
 import json.{ReadWriter, read}
 import upickle.core.TraceVisitor.TraceException
 import scala.annotation.targetName
@@ -53,7 +52,8 @@ object types:
       `type`: "number"
   ) derives ReadWriter
 
-  case class Integer(`type`: "integer") derives ReadWriter
+  case class Integer(`type`: "integer", description: Option[String] = None)
+      derives ReadWriter
 
   case class AdditionalProperties(
       `type`: "object",
@@ -140,11 +140,18 @@ case class RenderingStreams(flush: (String, LineBuilder) => Unit):
     streams.toMap.map((k, v) => k -> v.result)
 end RenderingStreams
 
-@main def generator(out: String) =
-  sys.error(s"Got $out")
-  val cont = io.Source.fromFile("./schema.json").getLines.mkString("\n")
+import decline_derive.*
+case class Config(
+    out: String,
+    schema: String,
+    @Name("files") filesOut: Option[String] = None
+) derives CommandApplication
+
+@main def generator(args: String*) =
+  val config = CommandApplication.parseOrExit[Config](args)
+  val cont = io.Source.fromFile(config.schema).getLines.mkString("\n")
   val schema = read[Schema](cont)
-  val base = os.pwd / "protocol" / "generated"
+  val base = os.Path(config.out)
   os.remove.all(base)
   os.makeDir.all(base)
   val streams = RenderingStreams(flush =
@@ -217,7 +224,11 @@ end RenderingStreams
     "SamplingMessage",
     "ModelHint",
     "CreateMessageRequest",
-    "CreateMessageResult"
+    "CreateMessageResult",
+    "CompleteRequest",
+    "CompleteResult",
+    "PromptReference",
+    "ResourceReference"
   )
 
   enum Kind:
@@ -427,6 +438,17 @@ end RenderingStreams
 
     go(tree, Seq.empty)
 
+  val fileNames = streams
+    .renderMapping()
+    .keys
+    .toList
+    .sorted
+    .map(f => base / s"$f.scala")
+    .mkString("\n")
+
+  config.filesOut.foreach: path =>
+    os.write.over(os.Path(path), fileNames, createFolders = true)
+
 end generator
 
 def sanitise(name: String) =
@@ -481,6 +503,11 @@ def renderObjectLike(
         case s: Num =>
           scaladoc(s.description)
           line(s"$cleanName: $tpe$default,")
+
+        case s: Integer =>
+          scaladoc(s.description)
+          line(s"$cleanName: $tpe$default,")
+
         case r: Ref =>
           scaladoc(r.description)
           line(s"$cleanName: $tpe$default,")

@@ -1,4 +1,4 @@
-package mcp
+package mcp.quick
 
 import mcp.{*, given}
 

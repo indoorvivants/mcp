@@ -55,7 +55,7 @@ lazy val json = projectMatrix
   .settings(
     simpleLayout,
     libraryDependencies ++= Seq(
-      "com.lihaoyi" %% "upickle" % Versions.upickle
+      "com.lihaoyi" %%% "upickle" % Versions.upickle
     )
   )
 
@@ -68,10 +68,12 @@ lazy val generator = projectMatrix
   .settings(
     simpleLayout,
     noPublish,
+    fork := true,
     libraryDependencies ++= Seq(
-      "com.indoorvivants" %% "rendition" % "0.0.4",
-      "com.lihaoyi" %% "os-lib" % "0.11.4",
-      "com.lihaoyi" %% "pprint" % "0.9.0"
+      "com.indoorvivants" %%% "rendition" % "0.0.4",
+      "com.indoorvivants" %%% "decline-derive" % "0.3.1",
+      "com.lihaoyi" %%% "os-lib" % "0.11.4",
+      "com.lihaoyi" %%% "pprint" % "0.9.0"
     )
   )
 
@@ -98,9 +100,35 @@ lazy val mcpProtocol = projectMatrix
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
 
+lazy val quick = projectMatrix
+  .in(file("mod/quick"))
+  .defaultAxes(defaults *)
+  .settings(
+    name := "mcp-quick"
+  )
+  .dependsOn(mcpProtocol)
+  .settings(munitSettings, simpleLayout)
+  .jvmPlatform(Versions.scalaVersions)
+  .nativePlatform(Versions.scalaVersions)
+  .settings(
+    scalaJSUseMainModuleInitializer := true,
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
+  )
+
+lazy val sample = projectMatrix
+  .in(file("mod/sample"))
+  .defaultAxes(defaults *)
+  .dependsOn(quick)
+  .settings(munitSettings, simpleLayout, noPublish)
+  .jvmPlatform(Versions.scalaVersions)
+  .nativePlatform(Versions.scalaVersions)
+  .settings(
+    libraryDependencies += "com.softwaremill.sttp.client4" %%% "core" % "4.0.3"
+  )
+
 lazy val docs = projectMatrix
   .in(file("mcp-docs"))
-  .dependsOn(mcpProtocol)
+  .dependsOn(quick)
   .defaultAxes(defaults *)
   .settings(
     mdocVariables := Map(
@@ -204,28 +232,31 @@ lazy val protocolJVM = mcpProtocol.jvm(Versions.Scala3)
 
 val generateProtocol = inputKey[Unit]("")
 generateProtocol := Def.inputTaskDyn {
-  // val girModule = girModuleName.value
-  // val girFiles = (ThisBuild / baseDirectory).value / "gir-files"
   val out =
-    (protocolJVM / Compile / sourceDirectory).value / "src" / "generated"
+    (protocolJVM / Compile / scalaSource).value
+      .getParentFile()
+      .getParentFile() / "generated"
 
-  // val generatedFiles =
-  //   (Compile / target).value / "fluent-generator" / "files.txt"
+  val schema =
+    (ThisBuild / baseDirectory).value / "schema.json"
 
-  // val task = InputKey[Unit]("scalafmtOnly")
+  val generatedFiles =
+    (generatorJVM / Compile / target).value / "generator" / "files.txt"
+
+  val task = InputKey[Unit]("scalafmtOnly")
 
   Def.sequential(
     Def
       .taskDyn {
         (generatorJVM / Compile / run)
           .toTask(
-            s" $out"
+            s" --out $out --files $generatedFiles --schema $schema"
           )
-      }
-      // Def.taskDyn {
-      //   val files = IO.readLines(generatedFiles)
-      //   (Compile / task).toTask(s" ${files.mkString(" ")}")
-      // }
+      },
+    Def.taskDyn {
+      val files = IO.readLines(generatedFiles)
+      (Compile / task).toTask(s" ${files.mkString(" ")}")
+    }
   )
 
 }.evaluated

@@ -1,7 +1,8 @@
-package mcp
+package mcp.quick
 
-import mcp.json.*
+import mcp.*, json.*
 import scala.annotation.targetName
+import scala.concurrent.Future
 
 type Id[A] = A
 
@@ -10,10 +11,12 @@ class MCPBuilder private (opts: MCPBuilder.Opts):
   import MCPBuilder.*
   private def copy(f: Opts => Opts) = new MCPBuilder(f(opts))
 
+  type F[A] = Id[A]
+
   def handle(req: MCPRequest & FromClient)(
-      f: Communicate[Id, FromServer] ?=> req.In => req.Out | Error
+      f: ServerToClient[Id] ?=> req.In => req.Out | Error
   ): MCPBuilder =
-    val handler = (c: Communicate[Id, FromServer]) ?=>
+    val handler = (c: ServerToClient[Id]) ?=>
       (in: ujson.Value) =>
         val params = read[req.In](in)
         f(params) match
@@ -27,9 +30,9 @@ class MCPBuilder private (opts: MCPBuilder.Opts):
 
   @targetName("handleNotification")
   def handle(req: MCPNotification & FromClient)(
-      f: Communicate[Id, FromServer] ?=> req.In => Unit
+      f: ServerToClient[Id] ?=> req.In => Unit
   ): MCPBuilder =
-    val handler = (c: Communicate[Id, FromServer]) ?=>
+    val handler = (c: ServerToClient[Id]) ?=>
       (in: ujson.Value) =>
         val params = read[req.In](in)
         f(params)
@@ -41,10 +44,8 @@ class MCPBuilder private (opts: MCPBuilder.Opts):
     )
   end handle
 
-  def run[A](transport: Transport[A] { type F[X] = X }): A =
-    transport.run(
-      ServerEndpoints(opts.requestHandlers, opts.notificationHandlers)
-    )
+  def run[A](transport: Transport[A] { type F[A] = self.F[A] }): A =
+    transport.run(opts)
 end MCPBuilder
 
 object MCPBuilder:
@@ -60,11 +61,11 @@ object MCPBuilder:
   private case class Opts(
       requestHandlers: Map[
         String,
-        Communicate[Id, FromServer] ?=> (ujson.Value) => ujson.Value | Error
+        ServerToClient[Id] ?=> (ujson.Value) => ujson.Value | Error
       ],
       notificationHandlers: Map[
         String,
-        Communicate[Id, FromServer] ?=> (ujson.Value) => Unit
+        ServerToClient[Id] ?=> (ujson.Value) => Unit
       ]
-  )
+  ) extends ServerEndpoints[Id]
 end MCPBuilder
