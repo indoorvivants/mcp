@@ -11,7 +11,7 @@ inThisBuild(
     homepage := Some(
       url("https://github.com/indoorvivants/mcp")
     ),
-    startYear := Some(2020),
+    startYear := Some(2025),
     licenses := List(
       "Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")
     ),
@@ -19,7 +19,7 @@ inThisBuild(
       Developer(
         "keynmol",
         "Anton Sviridov",
-        "keynmol@gmail.com",
+        "jobs@indoorvivants.com",
         url("https://blog.indoorvivants.com")
       )
     )
@@ -91,6 +91,7 @@ lazy val mcpProtocol = projectMatrix
   .jsPlatform(Versions.scalaVersions)
   .nativePlatform(Versions.scalaVersions)
   .enablePlugins(BuildInfoPlugin)
+  .disablePlugins(ScalafixPlugin)
   .settings(
     buildInfoPackage := "mcp.internal",
     buildInfoKeys := Seq[BuildInfoKey](
