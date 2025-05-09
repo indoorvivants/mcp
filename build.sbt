@@ -43,6 +43,8 @@ lazy val root = project
   .in(file("."))
   .aggregate(mcpProtocol.projectRefs *)
   .aggregate(docs.projectRefs *)
+  .aggregate(quick.projectRefs *)
+  .aggregate(sample.projectRefs *)
   .settings(noPublish)
 
 lazy val json = projectMatrix
@@ -159,7 +161,7 @@ val CICommands = Seq(
   "scalafixEnable",
   "compile",
   "test",
-  "docs/mdoc",
+  "checkDocs",
   "scalafmtCheckAll",
   "scalafmtSbtCheck",
   s"scalafix --check $scalafixRules",
@@ -260,3 +262,5 @@ generateProtocol := Def.inputTaskDyn {
   )
 
 }.evaluated
+
+addCommandAlias("checkDocs", "docs/mdoc --in README.md")
