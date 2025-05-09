@@ -18,7 +18,7 @@ Note that the jsonrpc implementation does not support cancellation, and is gener
 //> using scala 3.7.0
 //> using dep com.indoorvivants::mcp-quick::latest.release
 
-import mcp.*, quick.*
+import mcp.*
 
 @main def hello =
   val mcp = MCPBuilder

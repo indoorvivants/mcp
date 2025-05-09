@@ -1,3 +1,4 @@
+import scala.scalanative.nir.serialization
 import sbt.VirtualAxis.ScalaVersionAxis
 
 Global / excludeLintKeys += logManager
@@ -264,4 +265,9 @@ generateProtocol := Def.inputTaskDyn {
 
 }.evaluated
 
-addCommandAlias("checkDocs", "docs/mdoc --in README.md")
+addCommandAlias(
+  "checkDocs",
+  "docs/mdoc --in README.md --disableUsingDirectives"
+)
+
+concurrentRestrictions += Tags.limit(NativeTags.Link, 1)
