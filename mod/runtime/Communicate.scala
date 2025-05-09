@@ -15,15 +15,4 @@ trait Communicate[F[_], Origin <: (FromServer | FromClient)]:
   )(
       in: req.In
   ): F[req.Out | Error]
-
-  // def request[X <: MCPRequest & FromServer](
-  //     req: PreparedRequest[X],
-  //     options: RequestOptions = RequestOptions.default
-  // ): F[req.Out | Error] =
-  //   this.request[X](req.x, req.in, options)
-
-  // def notification[X <: MCPNotification & FromServer](
-  //     req: PreparedNotification[X]
-  // ): F[Unit] =
-  //   this.notification[X](req.x, req.in)
 end Communicate

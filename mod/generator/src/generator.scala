@@ -1,9 +1,3 @@
-//> using dep com.lihaoyi::upickle::4.1.0
-//> using dep com.indoorvivants::rendition::0.0.4
-//> using dep com.lihaoyi::os-lib::0.11.4
-//> using dep com.lihaoyi::pprint::0.9.0
-//> using scala 3.7.0
-
 package mcp
 
 //import mcp.{*, given}, json.*
@@ -146,7 +140,8 @@ case class RenderingStreams(flush: (String, LineBuilder) => Unit):
     streams.toMap.map((k, v) => k -> v.result)
 end RenderingStreams
 
-@main def generator =
+@main def generator(out: String) =
+  sys.error(s"Got $out")
   val cont = io.Source.fromFile("./schema.json").getLines.mkString("\n")
   val schema = read[Schema](cont)
   val base = os.pwd / "protocol" / "generated"

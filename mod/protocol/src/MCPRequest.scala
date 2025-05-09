@@ -11,8 +11,8 @@ trait MCPRequest(val method: String):
   given ReadWriter[Out] = compiletime.deferred
 end MCPRequest
 
-trait FromClient
-trait FromServer
+transparent trait FromClient
+transparent trait FromServer
 
 trait MCPNotification(val method: String):
   self =>

@@ -6,7 +6,7 @@ class RequestOptions private (opts: RequestOptions.Opts):
   import RequestOptions.*
   private def copy(f: Opts => Opts) = new RequestOptions(f(opts))
 
-  def timeout = opts.timeout
+  def timeout: Option[Duration] = opts.timeout
 
   def withTimeout(dur: Duration): RequestOptions = copy(
     _.copy(timeout = Some(dur))

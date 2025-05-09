@@ -42,7 +42,9 @@ class MCPBuilder private (opts: MCPBuilder.Opts):
   end handle
 
   def run[A](transport: Transport[A] { type F[X] = X }): A =
-    transport.run(opts.requestHandlers, opts.notificationHandlers)
+    transport.run(
+      ServerEndpoints(opts.requestHandlers, opts.notificationHandlers)
+    )
 end MCPBuilder
 
 object MCPBuilder:

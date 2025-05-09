@@ -44,16 +44,7 @@ class SyncTransport private (opts: SyncTransport.Opts) extends Transport[Unit]:
   /** Attach to input and output streams, processing requests and BLOCKING until
     * input stream is closed
     */
-  override def run(
-      requestHandlers: Map[
-        String,
-        Communicate[Id, FromServer] ?=> ujson.Value => (ujson.Value | Error)
-      ],
-      notificationHandlers: Map[
-        String,
-        Communicate[Id, FromServer] ?=> ujson.Value => Unit
-      ]
-  ): Unit =
+  override def run(endpoints: ServerEndpoints[F]): Unit =
 
     val reader = new BufferedReader(new InputStreamReader(opts.in))
     val pending =
@@ -101,8 +92,7 @@ class SyncTransport private (opts: SyncTransport.Opts) extends Transport[Unit]:
         handleLine(
           line,
           processClientResponse,
-          requestHandlers,
-          notificationHandlers
+          endpoints
         )
       )
     end while
@@ -144,14 +134,7 @@ class SyncTransport private (opts: SyncTransport.Opts) extends Transport[Unit]:
   private def handleLine(
       line: String,
       processClientResponse: (RpcId, ResponseParams) => Unit,
-      requestHandlers: Map[
-        String,
-        Communicate[Id, FromServer] ?=> ujson.Value => (ujson.Value | Error)
-      ],
-      notificationHandlers: Map[
-        String,
-        Communicate[Id, FromServer] ?=> ujson.Value => Unit
-      ]
+      endpoints: ServerEndpoints[Id]
   )(using Communicate[Id, FromServer]) =
     try
       val json = read[ujson.Obj](line)
@@ -166,7 +149,7 @@ class SyncTransport private (opts: SyncTransport.Opts) extends Transport[Unit]:
 
           val response =
             handleExceptions(id):
-              requestHandlers.get(method) match
+              endpoints.requestHandlers.get(method) match
                 case None =>
                   Response(
                     id,
@@ -191,7 +174,7 @@ class SyncTransport private (opts: SyncTransport.Opts) extends Transport[Unit]:
         case (hasId = false, hasMethod = true) =>
           val method = json.value("method").str
 
-          notificationHandlers.get(method) match
+          endpoints.notificationHandlers.get(method) match
             case None        => // do nothing
             case Some(value) => value(json)
 
