@@ -232,7 +232,6 @@ class SyncTransport private (opts: SyncTransport.Opts) extends Transport[Unit]:
     catch
       case exc =>
         log(s"Failed to parse JSON ($line): ${exc.getMessage}")
-        exc.printStackTrace(opts.errPS)
 
   private def log(msg: String) =
     this.synchronized:

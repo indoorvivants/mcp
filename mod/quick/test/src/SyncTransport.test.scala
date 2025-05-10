@@ -63,6 +63,14 @@ class SyncTransportTest extends munit.FunSuite, Setup:
         s"Method ${r1("method").str} is not handled"
       )
 
+  test("broken json"):
+    withProbe(List("hello")): probe =>
+      probe.transport.run(Opts())
+      assert(
+        probe.err.toString.contains("Failed to parse JSON"),
+        probe.err.toString
+      )
+
   test("exception in handler"):
     val r1 = req("hello/world", ujson.Obj())
     withProbe(lines(r1)): probe =>
