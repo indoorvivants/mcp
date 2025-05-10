@@ -72,22 +72,31 @@ class SyncTransportTest extends munit.FunSuite, Setup:
       )
 
   test("exception in handler"):
-    val r1 = req("hello/world", ujson.Obj())
-    withProbe(lines(r1)): probe =>
+    val r1 = req("hello/world", ujson.Obj("a" -> "throw"))
+    val r2 = req("hello/world", ujson.Obj("a" -> "calm"))
+    withProbe(lines(r1, r2)): probe =>
       probe.transport.run(
         Opts(requestHandlers =
-          Map("hello/world" -> handleReq(_ => sys.error("oh noes")))
+          Map(
+            "hello/world" -> handleReq(p =>
+              if p("a").str == "throw" then sys.error("oh noes")
+              else ujson.Obj("yesh" -> true)
+            )
+          )
         )
       )
-      val resp = probe.responsesById(r1("id"))
+      val err = probe.responsesById(r1("id"))
+      val ok = probe.responsesById(r2("id"))
+
+      assertEquals(ok("result"), ujson.Obj("yesh" -> true))
 
       assertEquals(
-        resp("error")("code").num.toInt,
+        err("error")("code").num.toInt,
         ErrorCode.InternalError.value
       )
 
       assertEquals(
-        resp("error")("message").str,
+        err("error")("message").str,
         s"oh noes"
       )
 
