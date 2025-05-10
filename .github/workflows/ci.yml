@@ -24,11 +24,25 @@ jobs:
 
       - uses: sbt/setup-sbt@v1
 
+
+      - name: SBT remote cache
+        id: remote-cache
+        uses: actions/cache@v3
+        with:
+          path: ./.remote-cache
+          key: ${{ runner.os }}-remote-cache
+
+      - name: Pull cache
+        run: sbt --client pullRemoteCache || echo 'remote cache not found'
+
       - name: Test
         run: sbt --client ci
 
       - name: Test publishing
         run: sbt --client publishLocal
+
+      - name: Push cache
+        run: sbt --client pushRemoteCache || echo 'oh well then'
 
       - name: Publish ${{ github.ref }}
         run: sbt ci-release

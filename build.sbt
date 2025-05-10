@@ -24,7 +24,7 @@ inThisBuild(
         url("https://blog.indoorvivants.com")
       )
     )
-  )
+  ) ++ remoteCacheSettings
 )
 
 val Versions = new {
@@ -47,7 +47,7 @@ lazy val root = project
   .aggregate(quick.projectRefs *)
   .aggregate(sample.projectRefs *)
   .aggregate(json.projectRefs *)
-  .settings(noPublish)
+  .settings(noPublish, remoteCacheSettings)
 
 lazy val json = projectMatrix
   .in(file("mod/json"))
@@ -58,6 +58,7 @@ lazy val json = projectMatrix
   .nativePlatform(Versions.scalaVersions)
   .settings(
     simpleLayout,
+    remoteCacheSettings,
     libraryDependencies ++= Seq(
       "com.lihaoyi" %%% "upickle" % Versions.upickle
     )
@@ -72,6 +73,7 @@ lazy val generator = projectMatrix
   .settings(
     simpleLayout,
     noPublish,
+    remoteCacheSettings,
     fork := true,
     libraryDependencies ++= Seq(
       "com.indoorvivants" %%% "rendition" % "0.0.4",
@@ -95,6 +97,7 @@ lazy val mcpProtocol = projectMatrix
   .enablePlugins(BuildInfoPlugin)
   .disablePlugins(ScalafixPlugin)
   .settings(
+    remoteCacheSettings,
     buildInfoPackage := "mcp.internal",
     buildInfoKeys := Seq[BuildInfoKey](
       version,
@@ -112,7 +115,7 @@ lazy val quick = projectMatrix
     name := "mcp-quick"
   )
   .dependsOn(mcpProtocol)
-  .settings(munitSettings, simpleLayout)
+  .settings(munitSettings, simpleLayout, remoteCacheSettings)
   .jvmPlatform(Versions.scalaVersions)
   .nativePlatform(Versions.scalaVersions)
   .settings(
@@ -124,7 +127,7 @@ lazy val sample = projectMatrix
   .in(file("mod/sample"))
   .defaultAxes(defaults *)
   .dependsOn(quick)
-  .settings(munitSettings, simpleLayout, noPublish)
+  .settings(munitSettings, simpleLayout, noPublish, remoteCacheSettings)
   .jvmPlatform(Versions.scalaVersions)
   .nativePlatform(Versions.scalaVersions)
   .settings(
@@ -142,7 +145,7 @@ lazy val docs = projectMatrix
   )
   .jvmPlatform(Versions.scalaVersions)
   .enablePlugins(MdocPlugin)
-  .settings(noPublish)
+  .settings(noPublish, remoteCacheSettings)
 
 val noPublish = Seq(
   publish / skip := true,
@@ -272,3 +275,14 @@ addCommandAlias(
 )
 
 concurrentRestrictions += Tags.limit(NativeTags.Link, 1)
+
+val remoteCacheSettings =
+  Seq(
+    pushRemoteCacheTo :=
+      Some(
+        MavenCache(
+          "local-cache",
+          (ThisBuild / baseDirectory).value / ".remote-cache"
+        )
+      )
+  )

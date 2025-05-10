@@ -22,3 +22,5 @@ target
 project/metals.sbt
 .scala-build
 out
+
+.remote-cache
