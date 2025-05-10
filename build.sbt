@@ -168,7 +168,6 @@ val scalafixRules = Seq(
 ).mkString(" ")
 
 val CICommands = Seq(
-  "clean",
   "scalafixEnable",
   "compile",
   "test",
