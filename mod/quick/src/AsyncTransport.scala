@@ -261,7 +261,7 @@ object AsyncTransport:
   val default = new AsyncTransport(
     Opts(
       false,
-      Executors.newSingleThreadExecutor(),
+      ExecutionContext.global,
       System.in,
       System.out,
       System.err

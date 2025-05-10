@@ -46,6 +46,7 @@ lazy val root = project
   .aggregate(docs.projectRefs *)
   .aggregate(quick.projectRefs *)
   .aggregate(sample.projectRefs *)
+  .aggregate(json.projectRefs *)
   .settings(noPublish)
 
 lazy val json = projectMatrix
