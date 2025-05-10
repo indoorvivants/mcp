@@ -60,6 +60,9 @@ class SyncTransport private (opts: SyncTransport.Opts) extends Transport[Unit]:
   /** Change default output stream used for writing responses */
   def out(os: OutputStream): SyncTransport = copy(_.copy(out = os))
 
+  /** Change default output stream used for writing log messages */
+  def err(os: OutputStream): SyncTransport = copy(_.copy(err = os))
+
   /** Change default input stream used for reading requests/notifications */
   def in(is: InputStream): SyncTransport = copy(_.copy(in = is))
 
@@ -71,8 +74,6 @@ class SyncTransport private (opts: SyncTransport.Opts) extends Transport[Unit]:
     val reader = new BufferedReader(new InputStreamReader(opts.in))
     val pending =
       new ConcurrentHashMap[RpcId, CompletableFuture[ResponseParams]]
-
-    given ec: ExecutionContext = ExecutionContext.fromExecutor(opts.executor)
 
     given comm: ServerToClient[Id]:
       override def request[X <: MCPRequest & FromServer](
@@ -112,21 +113,21 @@ class SyncTransport private (opts: SyncTransport.Opts) extends Transport[Unit]:
     end comm
 
     def processClientResponse(id: RpcId, response: ResponseParams) =
-      err(s"Handling response for id $id and $response")
+      log(s"Handling response for id $id and $response")
       val n = pending.remove(id)
       if n != null then n.complete(response)
-      else err(s"Received a response $response for an unknown request $id")
+      else log(s"Received a response $response for an unknown request $id")
     end processClientResponse
 
     var line: String = null
     while { line = reader.readLine(); line != null } do
-      opts.executor.execute(() =>
+      val l = line
+      opts.executor.execute: () =>
         handleLine(
-          line,
+          l,
           processClientResponse,
           endpoints
         )
-      )
     end while
 
   end run
@@ -158,7 +159,7 @@ class SyncTransport private (opts: SyncTransport.Opts) extends Transport[Unit]:
         case _ => v
     end dropNulls
 
-    if opts.log then err(s"Outputting ${dropNulls(obj)}")
+    if opts.log then log(s"Outputting ${dropNulls(obj)}")
 
     output(write(dropNulls(obj)))
   end out
@@ -170,7 +171,8 @@ class SyncTransport private (opts: SyncTransport.Opts) extends Transport[Unit]:
   )(using ServerToClient[Id]) =
     try
       val json = read[ujson.Obj](line)
-      if opts.log then err(s"Receiving $json")
+      assert(json("jsonrpc") == ujson.Str("2.0"))
+      if opts.log then log(s"Receiving $json")
       (
         hasId = json.value.contains("id"),
         hasMethod = json.value.contains("method")
@@ -222,17 +224,17 @@ class SyncTransport private (opts: SyncTransport.Opts) extends Transport[Unit]:
           )
 
         case _ =>
-          err(
+          log(
             s"Failed to interpret JSON ($line) as request/response/notification"
           )
 
       end match
     catch
       case exc =>
-        err(s"Failed to parse JSON ($line): ${exc.getMessage}")
+        log(s"Failed to parse JSON ($line): ${exc.getMessage}")
         exc.printStackTrace(opts.errPS)
 
-  private def err(msg: String) =
+  private def log(msg: String) =
     this.synchronized:
       opts.err.write(msg.getBytes)
       opts.err.write('\n')
