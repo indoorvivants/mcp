@@ -18,21 +18,12 @@ package mcp
 
 import mcp.json.*
 
-/** This request is sent from the client to the server when it first connects,
-  * asking it to begin initialization.
+/** Sent from the client to request resources/updated notifications from the
+  * server whenever a particular resource changes.
   */
-case class InitializeRequest(
-    params: InitializeRequest.Params,
-    method: "initialize" = "initialize"
+case class SubscribeParams(
+    /** The URI of the resource to subscribe to. The URI can use any protocol;
+      * it is up to the server how to interpret it.
+      */
+    uri: String
 ) derives ReadWriter
-
-object InitializeRequest:
-  case class Params(
-      capabilities: mcp.ClientCapabilities,
-      clientInfo: mcp.Implementation,
-      /** The latest version of the Model Context Protocol that the client
-        * supports. The client MAY decide to support older versions as well.
-        */
-      protocolVersion: String
-  ) derives ReadWriter
-end InitializeRequest

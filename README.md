@@ -27,7 +27,7 @@ import mcp.*
       InitializeResult(
         capabilities =
           ServerCapabilities(tools = Some(ServerCapabilities.Tools())),
-        protocolVersion = req.params.protocolVersion,
+        protocolVersion = req.protocolVersion,
         serverInfo = Implementation("scala-mcp", "0.0.1")
       )
     .run(SyncTransport.default)

@@ -18,19 +18,12 @@ package mcp
 
 import mcp.json.*
 
-/** Sent from the client to request a list of prompts and prompt templates the
-  * server has.
+/** Sent from the client to request cancellation of resources/updated
+  * notifications from the server. This should follow a previous
+  * resources/subscribe request.
   */
-case class ListPromptsRequest(
-    method: "prompts/list" = "prompts/list",
-    params: Option[ListPromptsRequest.Params] = None
+case class UnsubscribeParams(
+    /** The URI of the resource to unsubscribe from.
+      */
+    uri: String
 ) derives ReadWriter
-
-object ListPromptsRequest:
-  case class Params(
-      /** An opaque token representing the current pagination position. If
-        * provided, the server should return results starting after this cursor.
-        */
-      cursor: Option[String] = None
-  ) derives ReadWriter
-end ListPromptsRequest

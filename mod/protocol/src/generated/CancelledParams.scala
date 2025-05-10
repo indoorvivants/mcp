@@ -30,22 +30,15 @@ import mcp.json.*
   *
   * A client MUST NOT attempt to cancel its `initialize` request.
   */
-case class CancelledNotification(
-    params: CancelledNotification.Params,
-    method: "notifications/cancelled" = "notifications/cancelled"
+case class CancelledParams(
+    /** The ID of the request to cancel.
+      *
+      * This MUST correspond to the ID of a request previously issued in the
+      * same direction.
+      */
+    requestId: mcp.RequestId,
+    /** An optional string describing the reason for the cancellation. This MAY
+      * be logged or presented to the user.
+      */
+    reason: Option[String] = None
 ) derives ReadWriter
-
-object CancelledNotification:
-  case class Params(
-      /** The ID of the request to cancel.
-        *
-        * This MUST correspond to the ID of a request previously issued in the
-        * same direction.
-        */
-      requestId: mcp.RequestId,
-      /** An optional string describing the reason for the cancellation. This
-        * MAY be logged or presented to the user.
-        */
-      reason: Option[String] = None
-  ) derives ReadWriter
-end CancelledNotification

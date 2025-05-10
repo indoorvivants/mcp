@@ -1,3 +1,4 @@
+import scala.scalanative.build.SourceLevelDebuggingConfig
 import scala.scalanative.nir.serialization
 import sbt.VirtualAxis.ScalaVersionAxis
 
@@ -130,8 +131,12 @@ lazy val sample = projectMatrix
   .settings(munitSettings, simpleLayout, noPublish, remoteCacheSettings)
   .jvmPlatform(Versions.scalaVersions)
   .nativePlatform(Versions.scalaVersions)
+  .enablePlugins(JavaAppPackaging)
   .settings(
-    libraryDependencies += "com.softwaremill.sttp.client4" %%% "core" % "4.0.3"
+    libraryDependencies += "com.softwaremill.sttp.client4" %%% "core" % "4.0.3",
+    nativeConfig ~= {
+      _.withSourceLevelDebuggingConfig(SourceLevelDebuggingConfig.enabled)
+    }
   )
 
 lazy val docs = projectMatrix

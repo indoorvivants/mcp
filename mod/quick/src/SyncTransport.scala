@@ -20,6 +20,7 @@ import java.io.BufferedReader
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.io.OutputStream
+import java.io.PrintStream
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executor
@@ -79,11 +80,15 @@ class SyncTransport private (opts: SyncTransport.Opts) extends Transport[Unit]:
           options: RequestOptions = RequestOptions.default
       )(in: req.In): req.Out | Error =
         val id = genId()
-        val params = writeJs(in)
-        params("id") = id
-        out(params) // Write the request parameters to the output stream
         val fut = new CompletableFuture[ResponseParams]()
         pending.put(id, fut)
+        out(
+          ujson.Obj(
+            "id" -> id,
+            "params" -> writeJs(in),
+            "method" -> req.method
+          )
+        ) // Write the request parameters to the output stream
         options.timeout.foreach: dur =>
           fut.completeOnTimeout(ujson.Null, dur.toMillis, TimeUnit.MILLISECONDS)
         val response = fut.get() // N.B.: will block until response is received
@@ -101,13 +106,17 @@ class SyncTransport private (opts: SyncTransport.Opts) extends Transport[Unit]:
 
       override def notification[X <: MCPNotification & FromServer](notif: X)(
           in: notif.In
-      ): Unit = out(in)
+      ): Unit = out(
+        ujson.Obj("method" -> notif.method, "params" -> writeJs(in))
+      )
     end comm
 
     def processClientResponse(id: RpcId, response: ResponseParams) =
+      err(s"Handling response for id $id and $response")
       val n = pending.remove(id)
       if n != null then n.complete(response)
       else err(s"Received a response $response for an unknown request $id")
+    end processClientResponse
 
     var line: String = null
     while { line = reader.readLine(); line != null } do
@@ -166,9 +175,11 @@ class SyncTransport private (opts: SyncTransport.Opts) extends Transport[Unit]:
         hasId = json.value.contains("id"),
         hasMethod = json.value.contains("method")
       ) match
+        // it's a request
         case (hasId = true, hasMethod = true) =>
           val method = json.value("method").str
           val id = json.value("id")
+          val params = json.value.getOrElse("params", ujson.Obj())
 
           val response =
             handleExceptions(id):
@@ -185,7 +196,7 @@ class SyncTransport private (opts: SyncTransport.Opts) extends Transport[Unit]:
                   )
 
                 case Some(handler) =>
-                  handler(json) match
+                  handler(params) match
                     case err: Error =>
                       Response(id, error = Some(err))
 
@@ -194,16 +205,21 @@ class SyncTransport private (opts: SyncTransport.Opts) extends Transport[Unit]:
 
           out(response)
 
+        // it's a notification
         case (hasId = false, hasMethod = true) =>
           val method = json.value("method").str
+          val params = json.value.getOrElse("params", ujson.Obj())
 
           endpoints.notificationHandlers.get(method) match
             case None        => // do nothing
-            case Some(value) => value(json)
+            case Some(value) => value(params)
 
         case (hasId = true, hasMethod = false) =>
           // it's a response from client
-          processClientResponse(json.value("id"), json)
+          processClientResponse(
+            json.value("id"),
+            json
+          )
 
         case _ =>
           err(
@@ -214,6 +230,7 @@ class SyncTransport private (opts: SyncTransport.Opts) extends Transport[Unit]:
     catch
       case exc =>
         err(s"Failed to parse JSON ($line): ${exc.getMessage}")
+        exc.printStackTrace(opts.errPS)
 
   private def err(msg: String) =
     this.synchronized:
@@ -262,5 +279,7 @@ object SyncTransport:
       in: InputStream,
       out: OutputStream,
       err: OutputStream
-  )
+  ):
+    lazy val errPS = new PrintStream(err)
+  end Opts
 end SyncTransport

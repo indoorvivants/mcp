@@ -18,19 +18,9 @@ package mcp
 
 import mcp.json.*
 
-/** Sent from the client to request cancellation of resources/updated
-  * notifications from the server. This should follow a previous
-  * resources/subscribe request.
+/** Used by the client to invoke a tool provided by the server.
   */
-case class UnsubscribeRequest(
-    params: UnsubscribeRequest.Params,
-    method: "resources/unsubscribe" = "resources/unsubscribe"
+case class CallToolParams(
+    name: String,
+    arguments: Option[ujson.Obj] = None
 ) derives ReadWriter
-
-object UnsubscribeRequest:
-  case class Params(
-      /** The URI of the resource to unsubscribe from.
-        */
-      uri: String
-  ) derives ReadWriter
-end UnsubscribeRequest

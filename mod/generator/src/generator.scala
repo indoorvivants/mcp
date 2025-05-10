@@ -293,24 +293,51 @@ case class Config(
     case (name, defDef) =>
       defDef match
         case defDef: ObjectDefinition =>
-          streams.in(name):
-            line("package mcp")
-            emptyLine()
-            line("import mcp.json.*")
-            emptyLine()
-            scaladoc(defDef.description)
 
-            method(defDef.properties).foreach: meth =>
-              if meth.startsWith("notifications/") then
-                requestMethods += meth -> Kind.Notification(
-                  name.stripSuffix("Notification")
-                )
-              else
-                requestMethods += meth -> Kind.Request(
-                  name.stripSuffix("Request").stripSuffix("Result")
-                )
+          val meth = method(defDef.properties)
 
-            renderObjectLike(name, defDef.properties, defDef.required)
+          if meth.isDefined && (name.endsWith("Request") || name.endsWith(
+              "Notification"
+            ))
+          then
+            val method = meth.get
+            val params = defDef.properties
+              .get("params")
+              .collectFirst:
+                case o: Obj => o
+              .get
+
+            val newName =
+              name.stripSuffix("Notification").stripSuffix("Request") + "Params"
+
+            if method.startsWith("notifications/") then
+              requestMethods += method -> Kind.Notification(
+                newName
+              )
+            else
+              requestMethods += method -> Kind.Request(
+                newName
+              )
+            end if
+
+            streams.in(newName):
+              line("package mcp")
+              emptyLine()
+              line("import mcp.json.*")
+              emptyLine()
+              scaladoc(defDef.description)
+
+              renderObjectLike(newName, params.properties, params.required)
+          else
+            streams.in(name):
+              line("package mcp")
+              emptyLine()
+              line("import mcp.json.*")
+              emptyLine()
+              scaladoc(defDef.description)
+
+              renderObjectLike(name, defDef.properties, defDef.required)
+          end if
 
         case e: EnumDefinition =>
           streams.in(name):
@@ -415,17 +442,17 @@ case class Config(
                 case Kind.Request(base) =>
 
                   block(
-                    s"object ${current.name} extends MCPRequest(\"$methName\")${markerTraits(base)}:",
+                    s"object ${current.name} extends MCPRequest(\"$methName\")${markerTraits(base.stripSuffix("Params"))}:",
                     ""
                   ):
-                    line(s"type In = ${base}Request")
-                    line(s"type Out = ${base}Result")
+                    line(s"type In = ${base}")
+                    line(s"type Out = ${base.stripSuffix("Params")}Result")
                 case Kind.Notification(base) =>
                   block(
-                    s"object ${current.name} extends MCPNotification(\"$methName\")${markerTraits(base)}:",
+                    s"object ${current.name} extends MCPNotification(\"$methName\")${markerTraits(base.stripSuffix("Params"))}:",
                     ""
                   ):
-                    line(s"type In = ${base}Notification")
+                    line(s"type In = ${base}")
       else
         current.next.foreach: n =>
           go(n, fullPath)

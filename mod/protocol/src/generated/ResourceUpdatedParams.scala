@@ -18,18 +18,13 @@ package mcp
 
 import mcp.json.*
 
-/** Sent from the client to the server, to read a specific resource URI.
+/** A notification from the server to the client, informing it that a resource
+  * has changed and may need to be read again. This should only be sent if the
+  * client previously sent a resources/subscribe request.
   */
-case class ReadResourceRequest(
-    params: ReadResourceRequest.Params,
-    method: "resources/read" = "resources/read"
+case class ResourceUpdatedParams(
+    /** The URI of the resource that has been updated. This might be a
+      * sub-resource of the one that the client actually subscribed to.
+      */
+    uri: String
 ) derives ReadWriter
-
-object ReadResourceRequest:
-  case class Params(
-      /** The URI of the resource to read. The URI can use any protocol; it is
-        * up to the server how to interpret it.
-        */
-      uri: String
-  ) derives ReadWriter
-end ReadResourceRequest

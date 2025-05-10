@@ -18,20 +18,11 @@ package mcp
 
 import mcp.json.*
 
-/** Used by the client to get a prompt provided by the server.
+/** Sent from the client to request a list of resources the server has.
   */
-case class GetPromptRequest(
-    params: GetPromptRequest.Params,
-    method: "prompts/get" = "prompts/get"
+case class ListResourcesParams(
+    /** An opaque token representing the current pagination position. If
+      * provided, the server should return results starting after this cursor.
+      */
+    cursor: Option[String] = None
 ) derives ReadWriter
-
-object GetPromptRequest:
-  case class Params(
-      /** The name of the prompt or prompt template.
-        */
-      name: String,
-      /** Arguments to use for templating the prompt.
-        */
-      arguments: Option[ujson.Obj] = None
-  ) derives ReadWriter
-end GetPromptRequest

@@ -37,25 +37,23 @@ def weather(city: String) =
       InitializeResult(
         capabilities =
           ServerCapabilities(tools = Some(ServerCapabilities.Tools())),
-        protocolVersion = req.params.protocolVersion,
+        protocolVersion = req.protocolVersion,
         serverInfo = Implementation("get-weather-scala-mcp", "0.0.1")
       )
     .handle(notifications.initialized): _ =>
       // Send notifications to the client
       communicate.notification(notifications.tools.list_changed)(
-        ToolListChangedNotification()
+        ToolListChangedParams()
       )
       // Send requests and receive responses from the client
       System.err.println(
         communicate.request(sampling.createMessage)(
-          CreateMessageRequest(
-            params = CreateMessageRequest.Params(
-              maxTokens = 500,
-              messages = Seq(
-                SamplingMessage(
-                  TextContent("what is the meaning of life?"),
-                  role = Role.user
-                )
+          CreateMessageParams(
+            maxTokens = 500,
+            messages = Seq(
+              SamplingMessage(
+                TextContent("what is the meaning of life?"),
+                role = Role.user
               )
             )
           )
@@ -80,7 +78,7 @@ def weather(city: String) =
         )
       )
     .handle(tools.call): req =>
-      val location = req.params.arguments.get.obj("location").str
+      val location = req.arguments.get.obj("location").str
       CallToolResult(content =
         Seq(
           TextContent(text = weather(location), `type` = "text")

@@ -18,11 +18,11 @@ package mcp
 
 object completion:
   object complete extends MCPRequest("completion/complete"), FromClient:
-    type In = CompleteRequest
+    type In = CompleteParams
     type Out = CompleteResult
 
 object initialize extends MCPRequest("initialize"), FromClient:
-  type In = InitializeRequest
+  type In = InitializeParams
   type Out = InitializeResult
 
 object notifications:
@@ -30,111 +30,111 @@ object notifications:
       extends MCPNotification("notifications/cancelled"),
         FromClient,
         FromServer:
-    type In = CancelledNotification
+    type In = CancelledParams
   end cancelled
 
   object initialized
       extends MCPNotification("notifications/initialized"),
         FromClient:
-    type In = InitializedNotification
+    type In = InitializedParams
 
   object message extends MCPNotification("notifications/message"), FromServer:
-    type In = LoggingMessageNotification
+    type In = LoggingMessageParams
 
   object progress
       extends MCPNotification("notifications/progress"),
         FromClient,
         FromServer:
-    type In = ProgressNotification
+    type In = ProgressParams
   end progress
 
   object prompts:
     object list_changed
         extends MCPNotification("notifications/prompts/list_changed"),
           FromServer:
-      type In = PromptListChangedNotification
+      type In = PromptListChangedParams
   end prompts
 
   object resources:
     object list_changed
         extends MCPNotification("notifications/resources/list_changed"),
           FromServer:
-      type In = ResourceListChangedNotification
+      type In = ResourceListChangedParams
 
     object updated
         extends MCPNotification("notifications/resources/updated"),
           FromServer:
-      type In = ResourceUpdatedNotification
+      type In = ResourceUpdatedParams
   end resources
 
   object roots:
     object list_changed
         extends MCPNotification("notifications/roots/list_changed"),
           FromClient:
-      type In = RootsListChangedNotification
+      type In = RootsListChangedParams
   end roots
 
   object tools:
     object list_changed
         extends MCPNotification("notifications/tools/list_changed"),
           FromServer:
-      type In = ToolListChangedNotification
+      type In = ToolListChangedParams
   end tools
 end notifications
 
 object ping extends MCPRequest("ping"), FromClient, FromServer:
-  type In = PingRequest
+  type In = PingParams
   type Out = PingResult
 
 object prompts:
   object get extends MCPRequest("prompts/get"), FromClient:
-    type In = GetPromptRequest
+    type In = GetPromptParams
     type Out = GetPromptResult
 
   object list extends MCPRequest("prompts/list"), FromClient:
-    type In = ListPromptsRequest
+    type In = ListPromptsParams
     type Out = ListPromptsResult
 end prompts
 
 object resources:
   object list extends MCPRequest("resources/list"), FromClient:
-    type In = ListResourcesRequest
+    type In = ListResourcesParams
     type Out = ListResourcesResult
 
   object read extends MCPRequest("resources/read"), FromClient:
-    type In = ReadResourceRequest
+    type In = ReadResourceParams
     type Out = ReadResourceResult
 
   object subscribe extends MCPRequest("resources/subscribe"), FromClient:
-    type In = SubscribeRequest
+    type In = SubscribeParams
     type Out = SubscribeResult
 
   object templates:
     object list extends MCPRequest("resources/templates/list"), FromClient:
-      type In = ListResourceTemplatesRequest
+      type In = ListResourceTemplatesParams
       type Out = ListResourceTemplatesResult
 
   object unsubscribe extends MCPRequest("resources/unsubscribe"), FromClient:
-    type In = UnsubscribeRequest
+    type In = UnsubscribeParams
     type Out = UnsubscribeResult
 end resources
 
 object roots:
   object list extends MCPRequest("roots/list"), FromServer:
-    type In = ListRootsRequest
+    type In = ListRootsParams
     type Out = ListRootsResult
 
 object sampling:
   object createMessage extends MCPRequest("sampling/createMessage"), FromServer:
-    type In = CreateMessageRequest
+    type In = CreateMessageParams
     type Out = CreateMessageResult
 
 object tools:
   object call extends MCPRequest("tools/call"), FromClient:
-    type In = CallToolRequest
+    type In = CallToolParams
     type Out = CallToolResult
 
   object list extends MCPRequest("tools/list"), FromClient:
-    type In = ListToolsRequest
+    type In = ListToolsParams
     type Out = ListToolsResult
 end tools

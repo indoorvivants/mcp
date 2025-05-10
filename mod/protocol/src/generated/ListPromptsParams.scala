@@ -18,18 +18,12 @@ package mcp
 
 import mcp.json.*
 
-/** Sent from the client to request a list of tools the server has.
+/** Sent from the client to request a list of prompts and prompt templates the
+  * server has.
   */
-case class ListToolsRequest(
-    method: "tools/list" = "tools/list",
-    params: Option[ListToolsRequest.Params] = None
+case class ListPromptsParams(
+    /** An opaque token representing the current pagination position. If
+      * provided, the server should return results starting after this cursor.
+      */
+    cursor: Option[String] = None
 ) derives ReadWriter
-
-object ListToolsRequest:
-  case class Params(
-      /** An opaque token representing the current pagination position. If
-        * provided, the server should return results starting after this cursor.
-        */
-      cursor: Option[String] = None
-  ) derives ReadWriter
-end ListToolsRequest

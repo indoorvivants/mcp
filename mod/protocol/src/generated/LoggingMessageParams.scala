@@ -18,16 +18,16 @@ package mcp
 
 import mcp.json.*
 
-/** Used by the client to invoke a tool provided by the server.
+/** Notification of a log message passed from server to client. If no
+  * logging/setLevel request has been sent from the client, the server MAY
+  * decide which messages to send automatically.
   */
-case class CallToolRequest(
-    params: CallToolRequest.Params,
-    method: "tools/call" = "tools/call"
+case class LoggingMessageParams(
+    data: ujson.Value,
+    /** The severity of this log message.
+      */
+    level: mcp.LoggingLevel,
+    /** An optional name of the logger issuing this message.
+      */
+    logger: Option[String] = None
 ) derives ReadWriter
-
-object CallToolRequest:
-  case class Params(
-      name: String,
-      arguments: Option[ujson.Obj] = None
-  ) derives ReadWriter
-end CallToolRequest
