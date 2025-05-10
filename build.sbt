@@ -32,6 +32,11 @@ val Versions = new {
   val Scala3 = "3.7.0"
   val munit = "1.1.0"
   val upickle = "4.1.0"
+  val rendition = "0.0.4"
+  val declineDerive = "0.3.1"
+  val osLib = "0.11.4"
+  val pprint = "0.9.0"
+  val sttpClient = "4.0.3"
   val scalaVersions = Seq(Scala3)
 }
 
@@ -77,10 +82,10 @@ lazy val generator = projectMatrix
     remoteCacheSettings,
     fork := true,
     libraryDependencies ++= Seq(
-      "com.indoorvivants" %%% "rendition" % "0.0.4",
-      "com.indoorvivants" %%% "decline-derive" % "0.3.1",
-      "com.lihaoyi" %%% "os-lib" % "0.11.4",
-      "com.lihaoyi" %%% "pprint" % "0.9.0"
+      "com.indoorvivants" %%% "rendition" % Versions.rendition,
+      "com.indoorvivants" %%% "decline-derive" % Versions.declineDerive,
+      "com.lihaoyi" %%% "os-lib" % Versions.osLib,
+      "com.lihaoyi" %%% "pprint" % Versions.pprint
     )
   )
 
@@ -133,7 +138,7 @@ lazy val sample = projectMatrix
   .nativePlatform(Versions.scalaVersions)
   .enablePlugins(JavaAppPackaging)
   .settings(
-    libraryDependencies += "com.softwaremill.sttp.client4" %%% "core" % "4.0.3",
+    libraryDependencies += "com.softwaremill.sttp.client4" %%% "core" % Versions.sttpClient,
     nativeConfig ~= {
       _.withSourceLevelDebuggingConfig(SourceLevelDebuggingConfig.enabled)
     }
