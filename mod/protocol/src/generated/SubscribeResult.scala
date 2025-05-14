@@ -18,5 +18,8 @@ package mcp
 
 import mcp.json.*
 
+/** This is a dummy response object, as subscribe responses are not defined in
+  * the MCP spec
+  */
 case class SubscribeResult(
 ) derives ReadWriter

@@ -32,6 +32,33 @@ class MCPBuilder private (opts: MCPBuilder.Opts):
 
   type F[A] = Id[A]
 
+  /** Add a request handler. If used multiple times for same request, the last
+    * handler will be used.
+    *
+    * ```scala
+    * MCPBuilder
+    *   .create()
+    *   .handle(initialize): req =>
+    *     // req is of type `InitializeParams`
+    *     InitializeResult(...)
+    * ```
+    *
+    * The handler function will be executed asynchronously on the executor
+    * configured for the MCPBuilder.
+    *
+    * For a full set of requests that can be handled, see subclasses of
+    * [[MCPRequest]] trait.
+    *
+    * @param req
+    *   request to handle
+    * @param f
+    *   handler function. In the body of the function, [[mcp.communicate]] is
+    *   available to give you access to the ability to send requests and
+    *   notifications from server to client
+    * @return
+    *   updated MCPBuilder instance with the notification handler installed or
+    *   overwritten
+    */
   def handle(req: MCPRequest & FromClient)(
       f: ServerToClient[Id] ?=> req.In => req.Out | Error
   ): MCPBuilder =
@@ -47,6 +74,33 @@ class MCPBuilder private (opts: MCPBuilder.Opts):
     )
   end handle
 
+  /** Add a request handler. If used multiple times for same request, the last
+    * handler will be used.
+    *
+    * ```scala
+    * MCPBuilder
+    *   .create()
+    *   .handle(initialize): req =>
+    *     // req is of type `InitializeParams`
+    *     InitializeResult(...)
+    * ```
+    *
+    * The handler function will be executed asynchronously on the executor
+    * configured for the MCPBuilder.
+    *
+    * For a full set of requests that can be handled, see subclasses of
+    * [[MCPRequest]] trait.
+    *
+    * @param req
+    *   notification to handle (e.g. [[mcp.notifications.initialized]])
+    * @param f
+    *   handler function. In the body of the function, [[mcp.communicate]] is
+    *   available to give you access to the ability to send requests and
+    *   notifications from server to client
+    * @return
+    *   updated MCPBuilder instance with the notification handler installed or
+    *   overwritten
+    */
   @targetName("handleNotification")
   def handle(req: MCPNotification & FromClient)(
       f: ServerToClient[Id] ?=> req.In => Unit

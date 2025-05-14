@@ -18,5 +18,8 @@ package mcp
 
 import mcp.json.*
 
+/** This is a dummy response object, as unsubscribe responses are not defined in
+  * the MCP spec
+  */
 case class UnsubscribeResult(
 ) derives ReadWriter

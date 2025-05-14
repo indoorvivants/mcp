@@ -18,5 +18,8 @@ package mcp
 
 import mcp.json.*
 
+/** This is a dummy response object, as ping responses are not defined in the
+  * MCP spec
+  */
 case class PingResult(
 ) derives ReadWriter

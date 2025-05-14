@@ -273,7 +273,8 @@ generateProtocol := Def.inputTaskDyn {
     Def.taskDyn {
       val files = IO.readLines(generatedFiles)
       (Compile / task).toTask(s" ${files.mkString(" ")}")
-    }
+    },
+    (protocolJVM / Compile / headerCreate)
   )
 
 }.evaluated

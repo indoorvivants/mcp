@@ -278,12 +278,29 @@ case class Config(
   val requestMethods = Map.newBuilder[String, Kind]
 
   val synthetic = Seq(
-    "PingResult" -> ObjectDefinition(`type` = "object"),
-    "SubscribeResult" -> ObjectDefinition(`type` = "object"),
-    "UnsubscribeResult" -> ObjectDefinition(`type` = "object")
+    "PingResult" -> ObjectDefinition(
+      `type` = "object",
+      description = Some(
+        "This is a dummy response object, as ping responses are not defined in the MCP spec"
+      )
+    ),
+    "SubscribeResult" -> ObjectDefinition(
+      `type` = "object",
+      description = Some(
+        "This is a dummy response object, as subscribe responses are not defined in the MCP spec"
+      )
+    ),
+    "UnsubscribeResult" -> ObjectDefinition(
+      `type` = "object",
+      description = Some(
+        "This is a dummy response object, as unsubscribe responses are not defined in the MCP spec"
+      )
+    )
   )
 
   val unhandled = schema.definitions.filter(k => !toRender(k._1))
+
+  val descriptions = Map.newBuilder[String, String]
 
   println("NOT handled:")
   unhandled.keys.toList.sorted.foreach: name =>
@@ -309,6 +326,9 @@ case class Config(
 
             val newName =
               name.stripSuffix("Notification").stripSuffix("Request") + "Params"
+
+            defDef.description.foreach: desc =>
+              descriptions += method -> desc
 
             if method.startsWith("notifications/") then
               requestMethods += method -> Kind.Notification(
@@ -398,6 +418,7 @@ case class Config(
     mp("") = tree
 
     val methodMap = requestMethods.result()
+    val descriptionsMap = descriptions.result()
 
     methodMap.toSeq
       .sortBy(_._1)
@@ -440,18 +461,22 @@ case class Config(
             .foreach: m =>
               m match
                 case Kind.Request(base) =>
-
+                  scaladoc(descriptionsMap.get(methName))
                   block(
                     s"object ${current.name} extends MCPRequest(\"$methName\")${markerTraits(base.stripSuffix("Params"))}:",
                     ""
                   ):
+                    scaladoc(Some(s"Params to $methName request"))
                     line(s"type In = ${base}")
+                    scaladoc(Some(s"Response to $methName request"))
                     line(s"type Out = ${base.stripSuffix("Params")}Result")
                 case Kind.Notification(base) =>
+                  scaladoc(descriptionsMap.get(methName))
                   block(
                     s"object ${current.name} extends MCPNotification(\"$methName\")${markerTraits(base.stripSuffix("Params"))}:",
                     ""
                   ):
+                    scaladoc(Some(s"Params to $methName notification"))
                     line(s"type In = ${base}")
       else
         current.next.foreach: n =>
