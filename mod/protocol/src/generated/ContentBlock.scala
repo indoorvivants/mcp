@@ -28,4 +28,3 @@ val ContentBlock = Builder[mcp.TextContent]("mcp.TextContent")
   .orElse[mcp.AudioContent]("mcp.AudioContent")
   .orElse[mcp.ResourceLink]("mcp.ResourceLink")
   .orElse[mcp.EmbeddedResource]("mcp.EmbeddedResource")
-
