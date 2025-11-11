@@ -32,8 +32,8 @@ jobs:
           path: ./.remote-cache
           key: ${{ runner.os }}-remote-cache
 
-      - name: Pull cache
-        run: sbt --client pullRemoteCache || echo 'remote cache not found'
+      # - name: Pull cache
+      #   run: sbt --client pullRemoteCache || echo 'remote cache not found'
 
       - name: Test
         run: sbt --client ci
