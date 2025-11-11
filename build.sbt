@@ -65,6 +65,7 @@ lazy val json = projectMatrix
   .settings(
     simpleLayout,
     remoteCacheSettings,
+    munitSettings,
     libraryDependencies ++= Seq(
       "com.lihaoyi" %%% "upickle" % Versions.upickle
     )
