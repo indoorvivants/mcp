@@ -29,14 +29,14 @@ inThisBuild(
 )
 
 val Versions = new {
-  val Scala3 = "3.7.0"
-  val munit = "1.1.0"
-  val upickle = "4.1.0"
+  val Scala3 = "3.7.4"
+  val munit = "1.2.1"
+  val upickle = "4.4.1"
   val rendition = "0.0.4"
-  val declineDerive = "0.3.1"
+  val declineDerive = "0.3.2"
   val osLib = "0.11.4"
   val pprint = "0.9.0"
-  val sttpClient = "4.0.3"
+  val sttpClient = "4.0.13"
   val scalaVersions = Seq(Scala3)
 }
 
@@ -139,8 +139,17 @@ lazy val sample = projectMatrix
   .enablePlugins(JavaAppPackaging)
   .settings(
     libraryDependencies += "com.softwaremill.sttp.client4" %%% "core" % Versions.sttpClient,
-    nativeConfig ~= {
-      _.withSourceLevelDebuggingConfig(SourceLevelDebuggingConfig.enabled)
+    nativeConfig ~= { cfg =>
+      val arm64 = sys.props
+        .get("os.arch")
+        .filter(_.contains("aarch64"))
+        .toSeq
+        .flatMap(_ => Seq("-arch", "arm64"))
+
+      cfg
+        .withSourceLevelDebuggingConfig(SourceLevelDebuggingConfig.enabled)
+        .withLinkingOptions(_ ++ arm64)
+        .withCompileOptions(_ ++ arm64)
     }
   )
 

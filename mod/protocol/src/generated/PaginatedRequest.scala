@@ -18,23 +18,16 @@ package mcp
 
 import mcp.json.*
 
-/** Audio provided to or from an LLM.
-  */
-case class AudioContent(
-    /** The base64-encoded audio data.
-      */
-    data: String,
-    /** The MIME type of the audio. Different providers may support different
-      * audio types.
-      */
-    mimeType: String,
-    /** See [General fields:
-      * `_meta`](/specification/2025-06-18/basic/index#meta) for notes on
-      * `_meta` usage.
-      */
-    _meta: Option[ujson.Obj] = None,
-    /** Optional annotations for the client.
-      */
-    annotations: Option[mcp.Annotations] = None,
-    `type`: "audio" = "audio"
+case class PaginatedRequest(
+    method: String,
+    params: Option[PaginatedRequest.Params] = None
 ) derives ReadWriter
+
+object PaginatedRequest:
+  case class Params(
+      /** An opaque token representing the current pagination position. If
+        * provided, the server should return results starting after this cursor.
+        */
+      cursor: Option[String] = None
+  ) derives ReadWriter
+end PaginatedRequest

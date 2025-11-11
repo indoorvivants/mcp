@@ -18,23 +18,23 @@ package mcp
 
 import mcp.json.*
 
-/** Audio provided to or from an LLM.
+/** A request from the server to elicit additional information from the user via
+  * the client.
   */
-case class AudioContent(
-    /** The base64-encoded audio data.
+case class ElicitParams(
+    /** The message to present to the user.
       */
-    data: String,
-    /** The MIME type of the audio. Different providers may support different
-      * audio types.
+    message: String,
+    /** A restricted subset of JSON Schema. Only top-level properties are
+      * allowed, without nesting.
       */
-    mimeType: String,
-    /** See [General fields:
-      * `_meta`](/specification/2025-06-18/basic/index#meta) for notes on
-      * `_meta` usage.
-      */
-    _meta: Option[ujson.Obj] = None,
-    /** Optional annotations for the client.
-      */
-    annotations: Option[mcp.Annotations] = None,
-    `type`: "audio" = "audio"
+    requestedSchema: ElicitParams.RequestedSchema
 ) derives ReadWriter
+
+object ElicitParams:
+  case class RequestedSchema(
+      properties: ujson.Obj,
+      required: Option[Seq[String]] = None,
+      `type`: "object" = "object"
+  ) derives ReadWriter
+end ElicitParams

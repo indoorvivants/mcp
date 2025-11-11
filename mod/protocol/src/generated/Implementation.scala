@@ -18,9 +18,22 @@ package mcp
 
 import mcp.json.*
 
-/** Describes the name and version of an MCP implementation.
+/** Describes the name and version of an MCP implementation, with an optional
+  * title for UI representation.
   */
 case class Implementation(
+    /** Intended for programmatic or logical use, but used as a display name in
+      * past specs or fallback (if title isn't present).
+      */
     name: String,
-    version: String
+    version: String,
+    /** Intended for UI and end-user contexts — optimized to be human-readable
+      * and easily understood, even by those unfamiliar with domain-specific
+      * terminology.
+      *
+      * If not provided, the name should be used for display (except for Tool,
+      * where `annotations.title` should be given precedence over using `name`,
+      * if present).
+      */
+    title: Option[String] = None
 ) derives ReadWriter

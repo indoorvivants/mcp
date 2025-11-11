@@ -24,16 +24,6 @@ import mcp.json.*
   * resources from the MCP server.
   */
 case class PromptMessage(
-    content: PromptMessage.Content,
+    content: mcp.ContentBlock,
     role: mcp.Role
 ) derives ReadWriter
-
-object PromptMessage:
-  val Content =
-    Builder[mcp.TextContent]("TextContent")
-      .orElse[mcp.ImageContent]("ImageContent")
-      .orElse[mcp.AudioContent]("AudioContent")
-      .orElse[mcp.EmbeddedResource]("EmbeddedResource")
-
-  type Content = Content.BuilderType
-end PromptMessage

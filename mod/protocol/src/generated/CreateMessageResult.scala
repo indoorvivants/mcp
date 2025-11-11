@@ -29,8 +29,9 @@ case class CreateMessageResult(
       */
     model: String,
     role: mcp.Role,
-    /** This result property is reserved by the protocol to allow clients and
-      * servers to attach additional metadata to their responses.
+    /** See [General fields:
+      * `_meta`](/specification/2025-06-18/basic/index#meta) for notes on
+      * `_meta` usage.
       */
     _meta: Option[ujson.Obj] = None,
     /** The reason why sampling stopped, if known.

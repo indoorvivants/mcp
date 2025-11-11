@@ -21,13 +21,28 @@ import mcp.json.*
 /** A prompt or prompt template that the server offers.
   */
 case class Prompt(
-    /** The name of the prompt or prompt template.
+    /** Intended for programmatic or logical use, but used as a display name in
+      * past specs or fallback (if title isn't present).
       */
     name: String,
+    /** See [General fields:
+      * `_meta`](/specification/2025-06-18/basic/index#meta) for notes on
+      * `_meta` usage.
+      */
+    _meta: Option[ujson.Obj] = None,
     /** A list of arguments to use for templating the prompt.
       */
     arguments: Option[Seq[mcp.PromptArgument]],
     /** An optional description of what this prompt provides
       */
-    description: Option[String] = None
+    description: Option[String] = None,
+    /** Intended for UI and end-user contexts — optimized to be human-readable
+      * and easily understood, even by those unfamiliar with domain-specific
+      * terminology.
+      *
+      * If not provided, the name should be used for display (except for Tool,
+      * where `annotations.title` should be given precedence over using `name`,
+      * if present).
+      */
+    title: Option[String] = None
 ) derives ReadWriter

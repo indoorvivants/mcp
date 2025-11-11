@@ -18,23 +18,22 @@ package mcp
 
 import mcp.json.*
 
-/** Audio provided to or from an LLM.
+/** The client's response to an elicitation request.
   */
-case class AudioContent(
-    /** The base64-encoded audio data.
+case class ElicitResult(
+    /** The user action in response to the elicitation.
+      *   - "accept": User submitted the form/confirmed the action
+      *   - "decline": User explicitly declined the action
+      *   - "cancel": User dismissed without making an explicit choice
       */
-    data: String,
-    /** The MIME type of the audio. Different providers may support different
-      * audio types.
-      */
-    mimeType: String,
+    action: String,
     /** See [General fields:
       * `_meta`](/specification/2025-06-18/basic/index#meta) for notes on
       * `_meta` usage.
       */
     _meta: Option[ujson.Obj] = None,
-    /** Optional annotations for the client.
+    /** The submitted form data, only present when action is "accept". Contains
+      * values matching the requested schema.
       */
-    annotations: Option[mcp.Annotations] = None,
-    `type`: "audio" = "audio"
+    content: Option[ujson.Obj] = None
 ) derives ReadWriter

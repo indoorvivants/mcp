@@ -23,8 +23,9 @@ import mcp.json.*
   * servers without any previous subscription from the client.
   */
 case class ResourceListChangedParams(
-    /** This parameter name is reserved by MCP to allow clients and servers to
-      * attach additional metadata to their notifications.
+    /** See [General fields:
+      * `_meta`](/specification/2025-06-18/basic/index#meta) for notes on
+      * `_meta` usage.
       */
     _meta: Option[ujson.Obj] = None
 ) derives ReadWriter

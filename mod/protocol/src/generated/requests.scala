@@ -30,6 +30,21 @@ object completion:
   end complete
 end completion
 
+object elicitation:
+  /** A request from the server to elicit additional information from the user
+    * via the client.
+    */
+  object create extends MCPRequest("elicitation/create"), FromServer:
+    /** Params to elicitation/create request
+      */
+    type In = ElicitParams
+
+    /** Response to elicitation/create request
+      */
+    type Out = ElicitResult
+  end create
+end elicitation
+
 /** This request is sent from the client to the server when it first connects,
   * asking it to begin initialization.
   */
@@ -42,6 +57,20 @@ object initialize extends MCPRequest("initialize"), FromClient:
     */
   type Out = InitializeResult
 end initialize
+
+object logging:
+  /** A request from the client to the server, to enable or adjust logging.
+    */
+  object setLevel extends MCPRequest("logging/setLevel"), FromClient:
+    /** Params to logging/setLevel request
+      */
+    type In = SetLevelParams
+
+    /** Response to logging/setLevel request
+      */
+    type Out = SetLevelResult
+  end setLevel
+end logging
 
 object notifications:
   /** This notification can be sent by either side to indicate that it is

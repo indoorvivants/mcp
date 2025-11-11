@@ -18,23 +18,11 @@ package mcp
 
 import mcp.json.*
 
-/** Audio provided to or from an LLM.
+/** A reference to a resource or resource template definition.
   */
-case class AudioContent(
-    /** The base64-encoded audio data.
+case class ResourceTemplateReference(
+    /** The URI or URI template of the resource.
       */
-    data: String,
-    /** The MIME type of the audio. Different providers may support different
-      * audio types.
-      */
-    mimeType: String,
-    /** See [General fields:
-      * `_meta`](/specification/2025-06-18/basic/index#meta) for notes on
-      * `_meta` usage.
-      */
-    _meta: Option[ujson.Obj] = None,
-    /** Optional annotations for the client.
-      */
-    annotations: Option[mcp.Annotations] = None,
-    `type`: "audio" = "audio"
+    uri: String,
+    `type`: "ref/resource" = "ref/resource"
 ) derives ReadWriter

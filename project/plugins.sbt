@@ -12,11 +12,11 @@ addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.13.1")
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.10.0")
 
 // Compiled documentation
-addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.7.1")
+addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.8.0")
 
 // Scala.js and Scala Native
-addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.19.0")
+addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.20.1")
 
-addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.5.7")
+addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.5.9")
 
 addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.11.1")

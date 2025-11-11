@@ -21,15 +21,19 @@ import mcp.json.*
 /** A template description for resources available on the server.
   */
 case class ResourceTemplate(
-    /** A human-readable name for the type of resource this template refers to.
-      *
-      * This can be used by clients to populate UI elements.
+    /** Intended for programmatic or logical use, but used as a display name in
+      * past specs or fallback (if title isn't present).
       */
     name: String,
     /** A URI template (according to RFC 6570) that can be used to construct
       * resource URIs.
       */
     uriTemplate: String,
+    /** See [General fields:
+      * `_meta`](/specification/2025-06-18/basic/index#meta) for notes on
+      * `_meta` usage.
+      */
+    _meta: Option[ujson.Obj] = None,
     /** Optional annotations for the client.
       */
     annotations: Option[mcp.Annotations] = None,
@@ -43,5 +47,14 @@ case class ResourceTemplate(
       * only be included if all resources matching this template have the same
       * type.
       */
-    mimeType: Option[String] = None
+    mimeType: Option[String] = None,
+    /** Intended for UI and end-user contexts — optimized to be human-readable
+      * and easily understood, even by those unfamiliar with domain-specific
+      * terminology.
+      *
+      * If not provided, the name should be used for display (except for Tool,
+      * where `annotations.title` should be given precedence over using `name`,
+      * if present).
+      */
+    title: Option[String] = None
 ) derives ReadWriter
