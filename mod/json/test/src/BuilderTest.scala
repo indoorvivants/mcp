@@ -24,4 +24,6 @@ class BuilderTest extends FunSuite:
 
     val jsonTouch = """{"grass": true}"""
     assertEquals(read[MyType](jsonTouch), Touch(true))
+
+    assertEquals(read[MyType](write[MyType](Touch(true))), Touch(true))
 end BuilderTest
