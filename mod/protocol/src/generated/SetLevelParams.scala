@@ -18,23 +18,12 @@ package mcp
 
 import mcp.json.*
 
-/** Audio provided to or from an LLM.
+/** A request from the client to the server, to enable or adjust logging.
   */
-case class AudioContent(
-    /** The base64-encoded audio data.
+case class SetLevelParams(
+    /** The level of logging that the client wants to receive from the server.
+      * The server should send all logs at this level and higher (i.e., more
+      * severe) to the client as notifications/message.
       */
-    data: String,
-    /** The MIME type of the audio. Different providers may support different
-      * audio types.
-      */
-    mimeType: String,
-    /** See [General fields:
-      * `_meta`](/specification/2025-06-18/basic/index#meta) for notes on
-      * `_meta` usage.
-      */
-    _meta: Option[ujson.Obj] = None,
-    /** Optional annotations for the client.
-      */
-    annotations: Option[mcp.Annotations] = None,
-    `type`: "audio" = "audio"
+    level: mcp.LoggingLevel
 ) derives ReadWriter

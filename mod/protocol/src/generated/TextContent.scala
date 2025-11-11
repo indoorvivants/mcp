@@ -24,6 +24,11 @@ case class TextContent(
     /** The text content of the message.
       */
     text: String,
+    /** See [General fields:
+      * `_meta`](/specification/2025-06-18/basic/index#meta) for notes on
+      * `_meta` usage.
+      */
+    _meta: Option[ujson.Obj] = None,
     /** Optional annotations for the client.
       */
     annotations: Option[mcp.Annotations] = None,

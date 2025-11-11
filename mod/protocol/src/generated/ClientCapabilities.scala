@@ -23,6 +23,9 @@ import mcp.json.*
   * additional capabilities.
   */
 case class ClientCapabilities(
+    /** Present if the client supports elicitation from the server.
+      */
+    elicitation: Option[ujson.Obj] = None,
     /** Experimental, non-standard capabilities that the client supports.
       */
     experimental: Option[ujson.Obj] = None,

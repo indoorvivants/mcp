@@ -21,8 +21,18 @@ import mcp.json.*
 /** Identifies a prompt.
   */
 case class PromptReference(
-    /** The name of the prompt or prompt template
+    /** Intended for programmatic or logical use, but used as a display name in
+      * past specs or fallback (if title isn't present).
       */
     name: String,
+    /** Intended for UI and end-user contexts — optimized to be human-readable
+      * and easily understood, even by those unfamiliar with domain-specific
+      * terminology.
+      *
+      * If not provided, the name should be used for display (except for Tool,
+      * where `annotations.title` should be given precedence over using `name`,
+      * if present).
+      */
+    title: Option[String] = None,
     `type`: "ref/prompt" = "ref/prompt"
 ) derives ReadWriter

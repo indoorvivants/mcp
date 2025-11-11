@@ -25,6 +25,11 @@ case class BlobResourceContents(
     /** The URI of this resource.
       */
     uri: String,
+    /** See [General fields:
+      * `_meta`](/specification/2025-06-18/basic/index#meta) for notes on
+      * `_meta` usage.
+      */
+    _meta: Option[ujson.Obj] = None,
     /** The MIME type of this resource, if known.
       */
     mimeType: Option[String] = None

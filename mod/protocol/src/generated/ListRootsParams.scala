@@ -28,6 +28,10 @@ import mcp.json.*
   * to read from.
   */
 case class ListRootsParams(
+    /** See [General fields:
+      * `_meta`](/specification/2025-06-18/basic/index#meta) for notes on
+      * `_meta` usage.
+      */
     _meta: Option[ListRootsParams._meta] = None
 ) derives ReadWriter
 

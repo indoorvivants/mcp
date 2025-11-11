@@ -23,6 +23,10 @@ import mcp.json.*
   * disconnected.
   */
 case class PingParams(
+    /** See [General fields:
+      * `_meta`](/specification/2025-06-18/basic/index#meta) for notes on
+      * `_meta` usage.
+      */
     _meta: Option[PingParams._meta] = None
 ) derives ReadWriter
 

@@ -228,7 +228,19 @@ case class Config(
     "CompleteRequest",
     "CompleteResult",
     "PromptReference",
-    "ResourceReference"
+    "ResourceReference",
+    "BaseMetadata",
+    "ResourceContents",
+    "ResourceLink",
+    "ResourceTemplateReference",
+    "ElicitRequest",
+    "ElicitResult",
+    "Cursor",
+    "ContentBlock",
+    "SetLevelRequest",
+    "SetLevelRequest",
+    "PaginatedRequest",
+    "PaginatedResult"
   )
 
   enum Kind:
@@ -295,6 +307,12 @@ case class Config(
       description = Some(
         "This is a dummy response object, as unsubscribe responses are not defined in the MCP spec"
       )
+    ),
+    "SetLevelResult" -> ObjectDefinition(
+      `type` = "object",
+      description = Some(
+        "This is a dummy response object, as setLevel responses are not defined in the MCP spec"
+      )
     )
   )
 
@@ -359,7 +377,7 @@ case class Config(
               renderObjectLike(name, defDef.properties, defDef.required)
           end if
 
-        case e: EnumDefinition =>
+        case e: EnumDefinition if e.`enum`.exists(_.nonEmpty) =>
           streams.in(name):
             line("package mcp")
             emptyLine()
@@ -380,6 +398,16 @@ case class Config(
                   line(
                     "r => mapping.getOrElse(r, throw new IllegalArgumentException(s\"Invalid role: $r\"))"
                   )
+        case e: EnumDefinition if !e.`enum`.exists(_.nonEmpty) =>
+          // enum without values is just an opaque string
+          streams.in(name):
+            line("package mcp")
+            emptyLine()
+            line("import mcp.json.*")
+            emptyLine()
+            scaladoc(e.description)
+            line(s"opaque type $name <: String = String")
+
         case m: MixedTypeDefinition =>
           streams.in(name):
             line("package mcp")
@@ -406,6 +434,29 @@ case class Config(
 
                 line(s"type $name = $name.BuilderType")
             end match
+        case AnyOf(items) if items.forall(_.isInstanceOf[Ref]) =>
+          val refs = items.asInstanceOf[List[Ref]]
+
+          streams.in(name):
+            line("package mcp")
+            emptyLine()
+            line("import mcp.json.*")
+            emptyLine()
+
+            refs.map("mcp." + _.`$ref`.stripPrefix("#/definitions/")) match
+              case h :: rest =>
+                val union = (h :: rest).map("[[" + _ + "]]").mkString(" | ")
+                line("/** ")
+                line(s"* This type is equivalent to a union type of ${union}")
+                line("*/")
+                line(s"type $name = $name.BuilderType")
+
+                block(s"val $name = Builder[$h](\"$h\")", ""):
+                  rest.foreach: tpe =>
+                    line(s".orElse[$tpe](\"$tpe\")")
+            end match
+
+      end match
 
   }
 

@@ -24,7 +24,10 @@ case class CompleteParams(
     /** The argument's information
       */
     argument: CompleteParams.Argument,
-    ref: CompleteParams.Ref
+    ref: CompleteParams.Ref,
+    /** Additional, optional context for completions
+      */
+    context: Option[CompleteParams.Context] = None
 ) derives ReadWriter
 
 object CompleteParams:
@@ -36,10 +39,15 @@ object CompleteParams:
         */
       value: String
   ) derives ReadWriter
+  case class Context(
+      /** Previously-resolved variables in a URI template or prompt.
+        */
+      arguments: Option[ujson.Obj] = None
+  ) derives ReadWriter
 
   val Ref =
     Builder[mcp.PromptReference]("PromptReference")
-      .orElse[mcp.ResourceReference]("ResourceReference")
+      .orElse[mcp.ResourceTemplateReference]("ResourceTemplateReference")
 
   type Ref = Ref.BuilderType
 end CompleteParams

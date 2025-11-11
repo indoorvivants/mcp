@@ -22,8 +22,9 @@ import mcp.json.*
   */
 case class GetPromptResult(
     messages: Seq[mcp.PromptMessage],
-    /** This result property is reserved by the protocol to allow clients and
-      * servers to attach additional metadata to their responses.
+    /** See [General fields:
+      * `_meta`](/specification/2025-06-18/basic/index#meta) for notes on
+      * `_meta` usage.
       */
     _meta: Option[ujson.Obj] = None,
     /** An optional description for the prompt.

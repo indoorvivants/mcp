@@ -18,23 +18,8 @@ package mcp
 
 import mcp.json.*
 
-/** Audio provided to or from an LLM.
+/** This is a dummy response object, as setLevel responses are not defined in
+  * the MCP spec
   */
-case class AudioContent(
-    /** The base64-encoded audio data.
-      */
-    data: String,
-    /** The MIME type of the audio. Different providers may support different
-      * audio types.
-      */
-    mimeType: String,
-    /** See [General fields:
-      * `_meta`](/specification/2025-06-18/basic/index#meta) for notes on
-      * `_meta` usage.
-      */
-    _meta: Option[ujson.Obj] = None,
-    /** Optional annotations for the client.
-      */
-    annotations: Option[mcp.Annotations] = None,
-    `type`: "audio" = "audio"
+case class SetLevelResult(
 ) derives ReadWriter

@@ -26,6 +26,11 @@ case class Root(
       * allow other URI schemes.
       */
     uri: String,
+    /** See [General fields:
+      * `_meta`](/specification/2025-06-18/basic/index#meta) for notes on
+      * `_meta` usage.
+      */
+    _meta: Option[ujson.Obj] = None,
     /** An optional name for the root. This can be used to provide a
       * human-readable identifier for the root, which may be useful for display
       * purposes or for referencing the root in other parts of the application.

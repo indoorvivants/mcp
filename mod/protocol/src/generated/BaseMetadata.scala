@@ -18,40 +18,14 @@ package mcp
 
 import mcp.json.*
 
-/** A known resource that the server is capable of reading.
+/** Base interface for metadata with name (identifier) and title (display name)
+  * properties.
   */
-case class Resource(
+case class BaseMetadata(
     /** Intended for programmatic or logical use, but used as a display name in
       * past specs or fallback (if title isn't present).
       */
     name: String,
-    /** The URI of this resource.
-      */
-    uri: String,
-    /** See [General fields:
-      * `_meta`](/specification/2025-06-18/basic/index#meta) for notes on
-      * `_meta` usage.
-      */
-    _meta: Option[ujson.Obj] = None,
-    /** Optional annotations for the client.
-      */
-    annotations: Option[mcp.Annotations] = None,
-    /** A description of what this resource represents.
-      *
-      * This can be used by clients to improve the LLM's understanding of
-      * available resources. It can be thought of like a "hint" to the model.
-      */
-    description: Option[String] = None,
-    /** The MIME type of this resource, if known.
-      */
-    mimeType: Option[String] = None,
-    /** The size of the raw resource content, in bytes (i.e., before base64
-      * encoding or any tokenization), if known.
-      *
-      * This can be used by Hosts to display file sizes and estimate context
-      * window usage.
-      */
-    size: Option[Int] = None,
     /** Intended for UI and end-user contexts — optimized to be human-readable
       * and easily understood, even by those unfamiliar with domain-specific
       * terminology.

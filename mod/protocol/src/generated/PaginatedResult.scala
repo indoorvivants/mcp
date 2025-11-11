@@ -18,11 +18,14 @@ package mcp
 
 import mcp.json.*
 
-/** A reference to a resource or resource template definition.
-  */
-case class ResourceReference(
-    /** The URI or URI template of the resource.
+case class PaginatedResult(
+    /** See [General fields:
+      * `_meta`](/specification/2025-06-18/basic/index#meta) for notes on
+      * `_meta` usage.
       */
-    uri: String,
-    `type`: "ref/resource" = "ref/resource"
+    _meta: Option[ujson.Obj] = None,
+    /** An opaque token representing the pagination position after the last
+      * returned result. If present, there may be more results available.
+      */
+    nextCursor: Option[String] = None
 ) derives ReadWriter

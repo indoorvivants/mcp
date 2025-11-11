@@ -29,6 +29,12 @@ end json
 
 import json.*
 
+/** This class allows constructing a union type (identified by `BuilderType`
+  * member) alongside a specially constructed upickle codec for reading and
+  * writing the type
+  *
+  * @param seq
+  */
 class Builder[T] private (seq: Seq[(String, Any => Boolean, ReadWriter[?])]):
   opaque type BuilderType >: T = T
 

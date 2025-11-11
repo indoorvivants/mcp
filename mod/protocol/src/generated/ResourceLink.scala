@@ -18,9 +18,13 @@ package mcp
 
 import mcp.json.*
 
-/** A known resource that the server is capable of reading.
+/** A resource that the server is capable of reading, included in a prompt or
+  * tool call result.
+  *
+  * Note: resource links returned by tools are not guaranteed to appear in the
+  * results of `resources/list` requests.
   */
-case class Resource(
+case class ResourceLink(
     /** Intended for programmatic or logical use, but used as a display name in
       * past specs or fallback (if title isn't present).
       */
@@ -60,5 +64,6 @@ case class Resource(
       * where `annotations.title` should be given precedence over using `name`,
       * if present).
       */
-    title: Option[String] = None
+    title: Option[String] = None,
+    `type`: "resource_link" = "resource_link"
 ) derives ReadWriter
