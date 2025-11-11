@@ -18,9 +18,9 @@ package mcp
 
 import mcp.json.*
 
-/** This type is equivalent to a union type of `mcp.TextContent` |
-  * `mcp.ImageContent` | `mcp.AudioContent` | `mcp.ResourceLink` |
-  * `mcp.EmbeddedResource`
+/** This type is equivalent to a union type of [[mcp.TextContent]] |
+  * [[mcp.ImageContent]] | [[mcp.AudioContent]] | [[mcp.ResourceLink]] |
+  * [[mcp.EmbeddedResource]]
   */
 type ContentBlock = ContentBlock.BuilderType
 val ContentBlock = Builder[mcp.TextContent]("mcp.TextContent")
@@ -28,3 +28,4 @@ val ContentBlock = Builder[mcp.TextContent]("mcp.TextContent")
   .orElse[mcp.AudioContent]("mcp.AudioContent")
   .orElse[mcp.ResourceLink]("mcp.ResourceLink")
   .orElse[mcp.EmbeddedResource]("mcp.EmbeddedResource")
+

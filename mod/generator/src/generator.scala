@@ -240,7 +240,7 @@ case class Config(
     "SetLevelRequest",
     "SetLevelRequest",
     "PaginatedRequest",
-    "PaginatedResult",
+    "PaginatedResult"
   )
 
   enum Kind:
@@ -398,7 +398,7 @@ case class Config(
                   line(
                     "r => mapping.getOrElse(r, throw new IllegalArgumentException(s\"Invalid role: $r\"))"
                   )
-        case e: EnumDefinition if !e.`enum`.exists(_.nonEmpty) => 
+        case e: EnumDefinition if !e.`enum`.exists(_.nonEmpty) =>
           // enum without values is just an opaque string
           streams.in(name):
             line("package mcp")
@@ -407,7 +407,6 @@ case class Config(
             emptyLine()
             scaladoc(e.description)
             line(s"opaque type $name <: String = String")
-            
 
         case m: MixedTypeDefinition =>
           streams.in(name):
@@ -446,7 +445,7 @@ case class Config(
 
             refs.map("mcp." + _.`$ref`.stripPrefix("#/definitions/")) match
               case h :: rest =>
-                val union = (h :: rest).map("`" + _ + "`").mkString(" | ")
+                val union = (h :: rest).map("[[" + _ + "]]").mkString(" | ")
                 line("/** ")
                 line(s"* This type is equivalent to a union type of ${union}")
                 line("*/")
