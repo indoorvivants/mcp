@@ -40,7 +40,7 @@ Save it in a `mcp.scala` file and run it with MCP Inspector:
 npx @modelcontextprotocol/inspector scala-cli run mcp.scala
 ```
 
-For a more involved example, containing tool usage and bi-directional communication, see the [sample](./sample/main.scala).
+For a more involved example, containing tool usage and bi-directional communication, see the [sample](./sample/src/main.scala).
 
 ## See it in action
 
