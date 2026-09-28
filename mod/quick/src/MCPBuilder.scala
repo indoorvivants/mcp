@@ -119,6 +119,9 @@ class MCPBuilder private (opts: MCPBuilder.Opts):
 
   def run[A](transport: Transport[A] { type F[A] = self.F[A] }): A =
     transport.run(opts)
+
+  def endpoints: ServerEndpoints[F] = opts
+
 end MCPBuilder
 
 object MCPBuilder:

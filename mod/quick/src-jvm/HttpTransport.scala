@@ -68,6 +68,9 @@ class HttpTransport private (opts: HttpTransport.Opts) extends Transport[Unit]:
     catch case _: InterruptedException => server.stop(0)
   end run
 
+  def handler(endpoints: ServerEndpoints[Id]): HttpHandler = 
+    new McpHandler(endpoints)
+
   /** Start the server without blocking. Returns the running [[HttpServer]] so
     * the caller can query the bound port or stop it. Useful for tests.
     */
