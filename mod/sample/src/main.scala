@@ -17,6 +17,7 @@
 import java.util.concurrent.Executors
 
 import mcp.*
+import mcp.json.*
 import sttp.client4.*
 
 val backend = DefaultSyncBackend()
@@ -29,8 +30,9 @@ def weather(city: String) =
     .right
     .get
 
-@main def getWeatherScalaMCP =
-  MCPBuilder
+@main def getWeatherScalaMCP(http: Boolean = false) =
+
+  val mcp = MCPBuilder
     .create()
     .handle(ping)(_ => PingResult())
     .handle(initialize): req =>
@@ -38,21 +40,24 @@ def weather(city: String) =
         capabilities =
           ServerCapabilities(tools = Some(ServerCapabilities.Tools())),
         protocolVersion = req.protocolVersion,
-        serverInfo = Implementation("get-weather-scala-mcp", "0.0.1")
+        serverInfo = Implementation(
+          name = "get-weather-scala-mcp",
+          version = "0.0.1"
+        )
       )
     .handle(notifications.initialized): _ =>
       // Send notifications to the client
       communicate.notification(notifications.tools.list_changed)(
-        ToolListChangedParams()
+        NotificationParams()
       )
       // Send requests and receive responses from the client
       System.err.println(
         communicate.request(sampling.createMessage)(
-          CreateMessageParams(
+          CreateMessageRequestParams(
             maxTokens = 500,
             messages = Seq(
               SamplingMessage(
-                TextContent("what is the meaning of life?"),
+                content = writeJs(TextContent("what is the meaning of life?")),
                 role = Role.user
               )
             )
@@ -67,7 +72,7 @@ def weather(city: String) =
             description =
               Some("Get weather in concise form in a given location"),
             inputSchema = Tool.InputSchema(
-              Some(
+              properties = Some(
                 ujson.Obj(
                   "location" -> ujson.Obj("type" -> ujson.Str("string"))
                 )
@@ -84,7 +89,7 @@ def weather(city: String) =
           TextContent(text = weather(location), `type` = "text")
         )
       )
-    .run(
-      SyncTransport.default.verbose
-    )
+
+  if http then mcp.run(HttpTransport.default.verbose)
+  else mcp.run(SyncTransport.default.verbose)
 end getWeatherScalaMCP
