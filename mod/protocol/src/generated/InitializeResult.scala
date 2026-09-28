@@ -30,7 +30,7 @@ case class InitializeResult(
     protocolVersion: String,
     serverInfo: mcp.Implementation,
     /** See [General fields:
-      * `_meta`](/specification/2025-06-18/basic/index#meta) for notes on
+      * `_meta`](/specification/2025-11-25/basic/index#meta) for notes on
       * `_meta` usage.
       */
     _meta: Option[ujson.Obj] = None,

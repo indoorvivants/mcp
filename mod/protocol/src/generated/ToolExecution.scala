@@ -18,13 +18,19 @@ package mcp
 
 import mcp.json.*
 
-/** A notification from the server to the client, informing it that a resource
-  * has changed and may need to be read again. This should only be sent if the
-  * client previously sent a resources/subscribe request.
+/** Execution-related properties for a tool.
   */
-case class ResourceUpdatedParams(
-    /** The URI of the resource that has been updated. This might be a
-      * sub-resource of the one that the client actually subscribed to.
+case class ToolExecution(
+    /** Indicates whether this tool supports task-augmented execution. This
+      * allows clients to handle long-running operations through polling the
+      * task system.
+      *
+      *   - "forbidden": Tool does not support task-augmented execution (default
+      *     when absent)
+      *   - "optional": Tool may support task-augmented execution
+      *   - "required": Tool requires task-augmented execution
+      *
+      * Default: "forbidden"
       */
-    uri: String
+    taskSupport: Option[String] = None
 ) derives ReadWriter

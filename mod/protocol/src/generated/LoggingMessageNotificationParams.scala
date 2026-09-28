@@ -18,15 +18,18 @@ package mcp
 
 import mcp.json.*
 
-/** Notification of a log message passed from server to client. If no
-  * logging/setLevel request has been sent from the client, the server MAY
-  * decide which messages to send automatically.
+/** Parameters for a `notifications/message` notification.
   */
-case class LoggingMessageParams(
+case class LoggingMessageNotificationParams(
     data: ujson.Value,
     /** The severity of this log message.
       */
     level: mcp.LoggingLevel,
+    /** See [General fields:
+      * `_meta`](/specification/2025-11-25/basic/index#meta) for notes on
+      * `_meta` usage.
+      */
+    _meta: Option[ujson.Obj] = None,
     /** An optional name of the logger issuing this message.
       */
     logger: Option[String] = None

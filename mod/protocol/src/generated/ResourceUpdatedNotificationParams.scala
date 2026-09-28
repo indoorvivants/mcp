@@ -18,12 +18,16 @@ package mcp
 
 import mcp.json.*
 
-/** Sent from the client to request resources/updated notifications from the
-  * server whenever a particular resource changes.
+/** Parameters for a `notifications/resources/updated` notification.
   */
-case class SubscribeParams(
-    /** The URI of the resource to subscribe to. The URI can use any protocol;
-      * it is up to the server how to interpret it.
+case class ResourceUpdatedNotificationParams(
+    /** The URI of the resource that has been updated. This might be a
+      * sub-resource of the one that the client actually subscribed to.
       */
-    uri: String
+    uri: String,
+    /** See [General fields:
+      * `_meta`](/specification/2025-11-25/basic/index#meta) for notes on
+      * `_meta` usage.
+      */
+    _meta: Option[ujson.Obj] = None
 ) derives ReadWriter

@@ -18,27 +18,24 @@ package mcp
 
 import mcp.json.*
 
-/** This notification can be sent by either side to indicate that it is
-  * cancelling a previously-issued request.
-  *
-  * The request SHOULD still be in-flight, but due to communication latency, it
-  * is always possible that this notification MAY arrive after the request has
-  * already finished.
-  *
-  * This notification indicates that the result will be unused, so any
-  * associated processing SHOULD cease.
-  *
-  * A client MUST NOT attempt to cancel its `initialize` request.
+/** Parameters for a `notifications/cancelled` notification.
   */
-case class CancelledParams(
-    /** The ID of the request to cancel.
-      *
-      * This MUST correspond to the ID of a request previously issued in the
-      * same direction.
+case class CancelledNotificationParams(
+    /** See [General fields:
+      * `_meta`](/specification/2025-11-25/basic/index#meta) for notes on
+      * `_meta` usage.
       */
-    requestId: mcp.RequestId,
+    _meta: Option[ujson.Obj] = None,
     /** An optional string describing the reason for the cancellation. This MAY
       * be logged or presented to the user.
       */
-    reason: Option[String] = None
+    reason: Option[String] = None,
+    /** The ID of the request to cancel.
+      *
+      * This MUST correspond to the ID of a request previously issued in the
+      * same direction. This MUST be provided for cancelling non-task requests.
+      * This MUST NOT be used for cancelling tasks (use the `tasks/cancel`
+      * request instead).
+      */
+    requestId: Option[mcp.RequestId] = None
 ) derives ReadWriter

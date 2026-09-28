@@ -33,7 +33,7 @@ case class ResourceLink(
       */
     uri: String,
     /** See [General fields:
-      * `_meta`](/specification/2025-06-18/basic/index#meta) for notes on
+      * `_meta`](/specification/2025-11-25/basic/index#meta) for notes on
       * `_meta` usage.
       */
     _meta: Option[ujson.Obj] = None,
@@ -46,6 +46,21 @@ case class ResourceLink(
       * available resources. It can be thought of like a "hint" to the model.
       */
     description: Option[String] = None,
+    /** Optional set of sized icons that the client can display in a user
+      * interface.
+      *
+      * Clients that support rendering icons MUST support at least the following
+      * MIME types:
+      *   - `image/png` - PNG images (safe, universal compatibility)
+      *   - `image/jpeg` (and `image/jpg`) - JPEG images (safe, universal
+      *     compatibility)
+      *
+      * Clients that support rendering icons SHOULD also support:
+      *   - `image/svg+xml` - SVG images (scalable but requires security
+      *     precautions)
+      *   - `image/webp` - WebP images (modern, efficient format)
+      */
+    icons: Option[Seq[mcp.Icon]] = None,
     /** The MIME type of this resource, if known.
       */
     mimeType: Option[String] = None,

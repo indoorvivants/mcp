@@ -18,13 +18,30 @@ package mcp
 
 import mcp.json.*
 
-/** Used by the client to get a prompt provided by the server.
+/** Parameters for a `prompts/get` request.
   */
-case class GetPromptParams(
+case class GetPromptRequestParams(
     /** The name of the prompt or prompt template.
       */
     name: String,
+    /** See [General fields:
+      * `_meta`](/specification/2025-11-25/basic/index#meta) for notes on
+      * `_meta` usage.
+      */
+    _meta: Option[GetPromptRequestParams._meta] = None,
     /** Arguments to use for templating the prompt.
       */
     arguments: Option[ujson.Obj] = None
 ) derives ReadWriter
+
+object GetPromptRequestParams:
+  case class _meta(
+      /** If specified, the caller is requesting out-of-band progress
+        * notifications for this request (as represented by
+        * notifications/progress). The value of this parameter is an opaque
+        * token that will be attached to any subsequent notifications. The
+        * receiver is not obligated to provide these notifications.
+        */
+      progressToken: Option[mcp.ProgressToken] = None
+  ) derives ReadWriter
+end GetPromptRequestParams

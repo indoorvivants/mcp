@@ -18,14 +18,11 @@ package mcp
 
 import mcp.json.*
 
-/** An optional notification from the server to the client, informing it that
-  * the list of prompts it offers has changed. This may be issued by servers
-  * without any previous subscription from the client.
+/** Metadata for augmenting a request with task execution. Include this in the
+  * `task` field of the request parameters.
   */
-case class PromptListChangedParams(
-    /** See [General fields:
-      * `_meta`](/specification/2025-06-18/basic/index#meta) for notes on
-      * `_meta` usage.
+case class TaskMetadata(
+    /** Requested duration in milliseconds to retain task from creation.
       */
-    _meta: Option[ujson.Obj] = None
+    ttl: Option[Int] = None
 ) derives ReadWriter

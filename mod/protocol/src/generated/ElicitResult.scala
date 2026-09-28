@@ -23,17 +23,18 @@ import mcp.json.*
 case class ElicitResult(
     /** The user action in response to the elicitation.
       *   - "accept": User submitted the form/confirmed the action
-      *   - "decline": User explicitly declined the action
+      *   - "decline": User explicitly decline the action
       *   - "cancel": User dismissed without making an explicit choice
       */
     action: String,
     /** See [General fields:
-      * `_meta`](/specification/2025-06-18/basic/index#meta) for notes on
+      * `_meta`](/specification/2025-11-25/basic/index#meta) for notes on
       * `_meta` usage.
       */
     _meta: Option[ujson.Obj] = None,
-    /** The submitted form data, only present when action is "accept". Contains
-      * values matching the requested schema.
+    /** The submitted form data, only present when action is "accept" and mode
+      * was "form". Contains values matching the requested schema. Omitted for
+      * out-of-band mode responses.
       */
     content: Option[ujson.Obj] = None
 ) derives ReadWriter

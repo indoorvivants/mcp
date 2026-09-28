@@ -18,32 +18,32 @@ package mcp
 
 import mcp.json.*
 
-/** The client's response to a sampling/create_message request from the server.
+/** The client's response to a sampling/createMessage request from the server.
   * The client should inform the user before returning the sampled message, to
   * allow them to inspect the response (human in the loop) and decide whether to
   * allow the server to see it.
   */
 case class CreateMessageResult(
-    content: CreateMessageResult.Content,
+    content: ujson.Value,
     /** The name of the model that generated the message.
       */
     model: String,
     role: mcp.Role,
     /** See [General fields:
-      * `_meta`](/specification/2025-06-18/basic/index#meta) for notes on
+      * `_meta`](/specification/2025-11-25/basic/index#meta) for notes on
       * `_meta` usage.
       */
     _meta: Option[ujson.Obj] = None,
     /** The reason why sampling stopped, if known.
+      *
+      * Standard values:
+      *   - "endTurn": Natural end of the assistant's turn
+      *   - "stopSequence": A stop sequence was encountered
+      *   - "maxTokens": Maximum token limit was reached
+      *   - "toolUse": The model wants to use one or more tools
+      *
+      * This field is an open string to allow for provider-specific stop
+      * reasons.
       */
     stopReason: Option[String] = None
 ) derives ReadWriter
-
-object CreateMessageResult:
-  val Content =
-    Builder[mcp.TextContent]("TextContent")
-      .orElse[mcp.ImageContent]("ImageContent")
-      .orElse[mcp.AudioContent]("AudioContent")
-
-  type Content = Content.BuilderType
-end CreateMessageResult

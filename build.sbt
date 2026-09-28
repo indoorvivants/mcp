@@ -37,6 +37,7 @@ val Versions = new {
   val osLib = "0.11.4"
   val pprint = "0.9.0"
   val sttpClient = "4.0.13"
+  val mcpProtocolVersion = "2025-11-25"
   val scalaVersions = Seq(Scala3)
 }
 
@@ -109,7 +110,8 @@ lazy val mcpProtocol = projectMatrix
     buildInfoKeys := Seq[BuildInfoKey](
       version,
       scalaVersion,
-      scalaBinaryVersion
+      scalaBinaryVersion,
+      "mcpProtocolVersion" -> Versions.mcpProtocolVersion
     ),
     scalaJSUseMainModuleInitializer := true,
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))

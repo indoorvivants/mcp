@@ -22,12 +22,12 @@ import mcp.json.*
   * inform how objects are used or displayed
   */
 case class Annotations(
-    /** Describes who the intended customer of this object or data is.
+    /** Describes who the intended audience of this object or data is.
       *
       * It can include multiple entries to indicate content useful for multiple
       * audiences (e.g., `["user", "assistant"]`).
       */
-    audience: Option[Seq[mcp.Role]],
+    audience: Option[Seq[mcp.Role]] = None,
     /** The moment the resource was last modified, as an ISO 8601 formatted
       * string.
       *

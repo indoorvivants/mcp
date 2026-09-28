@@ -13,6 +13,7 @@ import rendition.{
   nest
 }
 import scala.util.Try
+import upickle.implicits.key
 
 enum MCPError(msg: String, tr: Throwable = null) extends Throwable(msg, tr):
   case FailureParsing(in: ujson.Value, reason: Throwable = null)
@@ -26,6 +27,7 @@ object types:
   type MixedType = MixedType.BuilderType
 
   lazy val DefDef = Builder[AnyOf]("anyof")
+    .orElse[AllOfDefinition]("allof")
     .orElse[EnumDefinition]("definition")
     .orElse[ObjectDefinition]("definition")
     .orElse[ArrayDefinition]("definition")
@@ -116,7 +118,13 @@ case class Ref(`$ref`: String, description: Option[String] = None)
 
 case class AnyOf(anyOf: List[DefDef]) derives ReadWriter
 
+case class AllOfDefinition(
+    allOf: List[Ref],
+    description: Option[String] = None
+) derives ReadWriter
+
 case class Schema(
+    @key("$defs")
     definitions: Map[String, DefDef]
 ) derives ReadWriter
 
@@ -240,12 +248,38 @@ case class Config(
     "SetLevelRequest",
     "SetLevelRequest",
     "PaginatedRequest",
-    "PaginatedResult"
+    "PaginatedResult",
+    // Params types (extracted from Request/Notification defs in 2020-12 schema)
+    "InitializeRequestParams",
+    "CallToolRequestParams",
+    "CancelledNotificationParams",
+    "CompleteRequestParams",
+    "CreateMessageRequestParams",
+    "ElicitRequestParams",
+    "GetPromptRequestParams",
+    "LoggingMessageNotificationParams",
+    "ProgressNotificationParams",
+    "ReadResourceRequestParams",
+    "SetLevelRequestParams",
+    "SubscribeRequestParams",
+    "UnsubscribeRequestParams",
+    "ResourceUpdatedNotificationParams",
+    "NotificationParams",
+    "RequestParams",
+    "PaginatedRequestParams",
+    // New shapes in the newer spec
+    "ToolExecution",
+    "Icon",
+    "Icons",
+    "TaskMetadata",
+    "ToolChoice",
+    "ElicitRequestFormParams",
+    "ElicitRequestURLParams"
   )
 
   enum Kind:
-    case Request(base: String)
-    case Notification(base: String)
+    case Request(base: String, stem: String)
+    case Notification(base: String, stem: String)
 
   enum Marker:
     case Client
@@ -253,7 +287,7 @@ case class Config(
 
   def getRefs(o: DefDef): List[String] =
     Try(o.asInstanceOf[AnyOf]).toOption.toList.flatMap: o =>
-      o.anyOf.collect { case r: Ref => r.`$ref`.stripPrefix("#/definitions/") }
+      o.anyOf.collect { case r: Ref => r.`$ref`.stripPrefix("#/$defs/") }
 
   val clientNotifications = getRefs(schema.definitions("ClientNotification"))
     .map(s => s.stripSuffix("Notification") -> Marker.Client)
@@ -336,36 +370,49 @@ case class Config(
             ))
           then
             val method = meth.get
-            val params = defDef.properties
-              .get("params")
-              .collectFirst:
-                case o: Obj => o
-              .get
+            val paramsProp = defDef.properties.get("params")
 
-            val newName =
+            // In the 2020-12 schema, `params` may be a $ref to a separate
+            // `XxxParams` definition rather than an inline object. In that
+            // case, follow the ref and render the wrapper against the target.
+            val (paramsProps, paramsRequired, paramsFromRef): (Map[String, Property], List[String], Option[String]) =
+              paramsProp match
+                case Some(o: Obj) => (o.properties, o.required, None)
+                case Some(r: Ref) =>
+                  val refName = r.`$ref`.stripPrefix("#/$defs/")
+                  schema.definitions.get(refName) match
+                    case Some(od: ObjectDefinition) =>
+                      (od.properties, od.required, Some(refName))
+                    case _ => (Map.empty, List.empty, Some(refName))
+                case _ => (Map.empty, List.empty, None)
+
+            val newName = paramsFromRef.getOrElse(
               name.stripSuffix("Notification").stripSuffix("Request") + "Params"
+            )
 
             defDef.description.foreach: desc =>
               descriptions += method -> desc
 
+            val stem = name.stripSuffix("Notification").stripSuffix("Request")
+
             if method.startsWith("notifications/") then
-              requestMethods += method -> Kind.Notification(
-                newName
-              )
+              requestMethods += method -> Kind.Notification(newName, stem)
             else
-              requestMethods += method -> Kind.Request(
-                newName
-              )
+              requestMethods += method -> Kind.Request(newName, stem)
             end if
 
-            streams.in(newName):
-              line("package mcp")
-              emptyLine()
-              line("import mcp.json.*")
-              emptyLine()
-              scaladoc(defDef.description)
+            // If params were extracted from a $ref, the referenced def has
+            // already been (or will be) rendered by the top-level loop. Only
+            // render an inline params class when it was truly inline.
+            if paramsFromRef.isEmpty then
+              streams.in(newName):
+                line("package mcp")
+                emptyLine()
+                line("import mcp.json.*")
+                emptyLine()
+                scaladoc(defDef.description)
 
-              renderObjectLike(newName, params.properties, params.required)
+                renderObjectLike(newName, paramsProps, paramsRequired)
           else
             streams.in(name):
               line("package mcp")
@@ -443,7 +490,7 @@ case class Config(
             line("import mcp.json.*")
             emptyLine()
 
-            refs.map("mcp." + _.`$ref`.stripPrefix("#/definitions/")) match
+            refs.map("mcp." + _.`$ref`.stripPrefix("#/$defs/")) match
               case h :: rest =>
                 val union = (h :: rest).map("[[" + _ + "]]").mkString(" | ")
                 line("/** ")
@@ -511,20 +558,20 @@ case class Config(
             .get(methName)
             .foreach: m =>
               m match
-                case Kind.Request(base) =>
+                case Kind.Request(base, stem) =>
                   scaladoc(descriptionsMap.get(methName))
                   block(
-                    s"object ${current.name} extends MCPRequest(\"$methName\")${markerTraits(base.stripSuffix("Params"))}:",
+                    s"object ${current.name} extends MCPRequest(\"$methName\")${markerTraits(stem)}:",
                     ""
                   ):
                     scaladoc(Some(s"Params to $methName request"))
                     line(s"type In = ${base}")
                     scaladoc(Some(s"Response to $methName request"))
-                    line(s"type Out = ${base.stripSuffix("Params")}Result")
-                case Kind.Notification(base) =>
+                    line(s"type Out = ${stem}Result")
+                case Kind.Notification(base, stem) =>
                   scaladoc(descriptionsMap.get(methName))
                   block(
-                    s"object ${current.name} extends MCPNotification(\"$methName\")${markerTraits(base.stripSuffix("Params"))}:",
+                    s"object ${current.name} extends MCPNotification(\"$methName\")${markerTraits(stem)}:",
                     ""
                   ):
                     scaladoc(Some(s"Params to $methName notification"))
@@ -616,7 +663,7 @@ def renderObjectLike(
           line(s"$cleanName: $tpe$default,")
         case AnyOf(refs) if refs.forall(_.isInstanceOf[Ref]) =>
           line(
-            s"$cleanName: $name.${propName.capitalize},"
+            s"$cleanName: ${typeWrap(s"$name.${propName.capitalize}")}$default,"
           )
           unionsToBuild += propName.capitalize -> refs.collect { case r: Ref =>
             r
@@ -626,7 +673,7 @@ def renderObjectLike(
             if refs.forall(_.isInstanceOf[Ref]) =>
           scaladoc(description)
           line(
-            s"$cleanName: ${typeWrap(s"Seq[$name.${propName.capitalize}]")},"
+            s"$cleanName: ${typeWrap(s"Seq[$name.${propName.capitalize}]")}$default,"
           )
           unionsToBuild += propName.capitalize -> refs.collect { case r: Ref =>
             r
@@ -635,7 +682,7 @@ def renderObjectLike(
         case Arr(_, r @ Ref(_, _), description) =>
           scaladoc(description)
           line(
-            s"$cleanName: ${typeWrap(s"Seq[${{ propType(r, true) }}]")},"
+            s"$cleanName: ${typeWrap(s"Seq[${{ propType(r, true) }}]")}$default,"
           )
 
         case o: Obj =>
@@ -669,7 +716,7 @@ def renderObjectLike(
 
       if anons.nonEmpty then emptyLine()
       unions.foreach: (name, refs) =>
-        refs.map(_.`$ref`.stripPrefix("#/definitions/")) match
+        refs.map(_.`$ref`.stripPrefix("#/$defs/")) match
           case h :: rest =>
             block(
               s"val $name = ",
@@ -716,12 +763,13 @@ def propType(s: Property, required: Boolean): String =
       const.getOrElse("String")
     case s: Num     => "Double"
     case s: Integer => "Int"
-    case r: Ref     => s"mcp.${r.`$ref`.stripPrefix("#/definitions/")}"
+    case r: Ref     => s"mcp.${r.`$ref`.stripPrefix("#/$defs/")}"
     case s: Bool    => "Boolean"
     case a: Arr =>
       s"Seq[${propType(a.items, required = true)}]"
     case AnyOf(cases) =>
-      s"Any /*$cases*/"
+      // Mixed anyOf we can't render as a proper union — fall back to raw JSON.
+      "ujson.Value"
     case o: Obj if o.properties.isEmpty => "ujson.Obj"
     case d: Data                        => "ujson.Value"
 
@@ -729,9 +777,4 @@ def propType(s: Property, required: Boolean): String =
 end propType
 
 def method(p: Iterable[(String, Property)]): Option[String] =
-  p
-    .collectFirst:
-      case ("method", s: Str) =>
-        s.const
-      case _ => None
-    .flatten
+  p.collectFirst { case ("method", s: Str) if s.const.isDefined => s.const.get }
