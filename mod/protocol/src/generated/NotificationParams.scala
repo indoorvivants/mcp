@@ -18,12 +18,10 @@ package mcp
 
 import mcp.json.*
 
-/** Sent from the client to request cancellation of resources/updated
-  * notifications from the server. This should follow a previous
-  * resources/subscribe request.
-  */
-case class UnsubscribeParams(
-    /** The URI of the resource to unsubscribe from.
+case class NotificationParams(
+    /** See [General fields:
+      * `_meta`](/specification/2025-11-25/basic/index#meta) for notes on
+      * `_meta` usage.
       */
-    uri: String
+    _meta: Option[ujson.Obj] = None
 ) derives ReadWriter

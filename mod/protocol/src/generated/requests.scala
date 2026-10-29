@@ -22,7 +22,7 @@ object completion:
   object complete extends MCPRequest("completion/complete"), FromClient:
     /** Params to completion/complete request
       */
-    type In = CompleteParams
+    type In = CompleteRequestParams
 
     /** Response to completion/complete request
       */
@@ -37,7 +37,7 @@ object elicitation:
   object create extends MCPRequest("elicitation/create"), FromServer:
     /** Params to elicitation/create request
       */
-    type In = ElicitParams
+    type In = ElicitRequestParams
 
     /** Response to elicitation/create request
       */
@@ -51,7 +51,7 @@ end elicitation
 object initialize extends MCPRequest("initialize"), FromClient:
   /** Params to initialize request
     */
-  type In = InitializeParams
+  type In = InitializeRequestParams
 
   /** Response to initialize request
     */
@@ -64,7 +64,7 @@ object logging:
   object setLevel extends MCPRequest("logging/setLevel"), FromClient:
     /** Params to logging/setLevel request
       */
-    type In = SetLevelParams
+    type In = SetLevelRequestParams
 
     /** Response to logging/setLevel request
       */
@@ -84,6 +84,9 @@ object notifications:
     * associated processing SHOULD cease.
     *
     * A client MUST NOT attempt to cancel its `initialize` request.
+    *
+    * For task cancellation, use the `tasks/cancel` request instead of this
+    * notification.
     */
   object cancelled
       extends MCPNotification("notifications/cancelled"),
@@ -91,7 +94,7 @@ object notifications:
         FromServer:
     /** Params to notifications/cancelled notification
       */
-    type In = CancelledParams
+    type In = CancelledNotificationParams
   end cancelled
 
   /** This notification is sent from the client to the server after
@@ -102,17 +105,17 @@ object notifications:
         FromClient:
     /** Params to notifications/initialized notification
       */
-    type In = InitializedParams
+    type In = NotificationParams
   end initialized
 
-  /** Notification of a log message passed from server to client. If no
+  /** JSONRPCNotification of a log message passed from server to client. If no
     * logging/setLevel request has been sent from the client, the server MAY
     * decide which messages to send automatically.
     */
   object message extends MCPNotification("notifications/message"), FromServer:
     /** Params to notifications/message notification
       */
-    type In = LoggingMessageParams
+    type In = LoggingMessageNotificationParams
   end message
 
   /** An out-of-band notification used to inform the receiver of a progress
@@ -124,7 +127,7 @@ object notifications:
         FromServer:
     /** Params to notifications/progress notification
       */
-    type In = ProgressParams
+    type In = ProgressNotificationParams
   end progress
 
   object prompts:
@@ -137,7 +140,7 @@ object notifications:
           FromServer:
       /** Params to notifications/prompts/list_changed notification
         */
-      type In = PromptListChangedParams
+      type In = NotificationParams
     end list_changed
   end prompts
 
@@ -151,7 +154,7 @@ object notifications:
           FromServer:
       /** Params to notifications/resources/list_changed notification
         */
-      type In = ResourceListChangedParams
+      type In = NotificationParams
     end list_changed
 
     /** A notification from the server to the client, informing it that a
@@ -163,7 +166,7 @@ object notifications:
           FromServer:
       /** Params to notifications/resources/updated notification
         */
-      type In = ResourceUpdatedParams
+      type In = ResourceUpdatedNotificationParams
     end updated
   end resources
 
@@ -178,7 +181,7 @@ object notifications:
           FromClient:
       /** Params to notifications/roots/list_changed notification
         */
-      type In = RootsListChangedParams
+      type In = NotificationParams
     end list_changed
   end roots
 
@@ -192,7 +195,7 @@ object notifications:
           FromServer:
       /** Params to notifications/tools/list_changed notification
         */
-      type In = ToolListChangedParams
+      type In = NotificationParams
     end list_changed
   end tools
 end notifications
@@ -204,7 +207,7 @@ end notifications
 object ping extends MCPRequest("ping"), FromClient, FromServer:
   /** Params to ping request
     */
-  type In = PingParams
+  type In = RequestParams
 
   /** Response to ping request
     */
@@ -217,7 +220,7 @@ object prompts:
   object get extends MCPRequest("prompts/get"), FromClient:
     /** Params to prompts/get request
       */
-    type In = GetPromptParams
+    type In = GetPromptRequestParams
 
     /** Response to prompts/get request
       */
@@ -230,7 +233,7 @@ object prompts:
   object list extends MCPRequest("prompts/list"), FromClient:
     /** Params to prompts/list request
       */
-    type In = ListPromptsParams
+    type In = PaginatedRequestParams
 
     /** Response to prompts/list request
       */
@@ -244,7 +247,7 @@ object resources:
   object list extends MCPRequest("resources/list"), FromClient:
     /** Params to resources/list request
       */
-    type In = ListResourcesParams
+    type In = PaginatedRequestParams
 
     /** Response to resources/list request
       */
@@ -256,7 +259,7 @@ object resources:
   object read extends MCPRequest("resources/read"), FromClient:
     /** Params to resources/read request
       */
-    type In = ReadResourceParams
+    type In = ReadResourceRequestParams
 
     /** Response to resources/read request
       */
@@ -269,7 +272,7 @@ object resources:
   object subscribe extends MCPRequest("resources/subscribe"), FromClient:
     /** Params to resources/subscribe request
       */
-    type In = SubscribeParams
+    type In = SubscribeRequestParams
 
     /** Response to resources/subscribe request
       */
@@ -283,7 +286,7 @@ object resources:
     object list extends MCPRequest("resources/templates/list"), FromClient:
       /** Params to resources/templates/list request
         */
-      type In = ListResourceTemplatesParams
+      type In = PaginatedRequestParams
 
       /** Response to resources/templates/list request
         */
@@ -298,7 +301,7 @@ object resources:
   object unsubscribe extends MCPRequest("resources/unsubscribe"), FromClient:
     /** Params to resources/unsubscribe request
       */
-    type In = UnsubscribeParams
+    type In = UnsubscribeRequestParams
 
     /** Response to resources/unsubscribe request
       */
@@ -319,7 +322,7 @@ object roots:
   object list extends MCPRequest("roots/list"), FromServer:
     /** Params to roots/list request
       */
-    type In = ListRootsParams
+    type In = RequestParams
 
     /** Response to roots/list request
       */
@@ -336,7 +339,7 @@ object sampling:
   object createMessage extends MCPRequest("sampling/createMessage"), FromServer:
     /** Params to sampling/createMessage request
       */
-    type In = CreateMessageParams
+    type In = CreateMessageRequestParams
 
     /** Response to sampling/createMessage request
       */
@@ -350,7 +353,7 @@ object tools:
   object call extends MCPRequest("tools/call"), FromClient:
     /** Params to tools/call request
       */
-    type In = CallToolParams
+    type In = CallToolRequestParams
 
     /** Response to tools/call request
       */
@@ -362,7 +365,7 @@ object tools:
   object list extends MCPRequest("tools/list"), FromClient:
     /** Params to tools/list request
       */
-    type In = ListToolsParams
+    type In = PaginatedRequestParams
 
     /** Response to tools/list request
       */

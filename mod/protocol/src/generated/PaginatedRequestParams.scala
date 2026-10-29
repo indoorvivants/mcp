@@ -18,11 +18,28 @@ package mcp
 
 import mcp.json.*
 
-/** Sent from the client to request a list of resource templates the server has.
+/** Common parameters for paginated requests.
   */
-case class ListResourceTemplatesParams(
+case class PaginatedRequestParams(
+    /** See [General fields:
+      * `_meta`](/specification/2025-11-25/basic/index#meta) for notes on
+      * `_meta` usage.
+      */
+    _meta: Option[PaginatedRequestParams._meta] = None,
     /** An opaque token representing the current pagination position. If
       * provided, the server should return results starting after this cursor.
       */
     cursor: Option[String] = None
 ) derives ReadWriter
+
+object PaginatedRequestParams:
+  case class _meta(
+      /** If specified, the caller is requesting out-of-band progress
+        * notifications for this request (as represented by
+        * notifications/progress). The value of this parameter is an opaque
+        * token that will be attached to any subsequent notifications. The
+        * receiver is not obligated to provide these notifications.
+        */
+      progressToken: Option[mcp.ProgressToken] = None
+  ) derives ReadWriter
+end PaginatedRequestParams

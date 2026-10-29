@@ -18,8 +18,7 @@ package mcp
 
 import mcp.json.*
 
-/** Describes the name and version of an MCP implementation, with an optional
-  * title for UI representation.
+/** Describes the MCP implementation.
   */
 case class Implementation(
     /** Intended for programmatic or logical use, but used as a display name in
@@ -27,6 +26,29 @@ case class Implementation(
       */
     name: String,
     version: String,
+    /** An optional human-readable description of what this implementation does.
+      *
+      * This can be used by clients or servers to provide context about their
+      * purpose and capabilities. For example, a server might describe the types
+      * of resources or tools it provides, while a client might describe its
+      * intended use case.
+      */
+    description: Option[String] = None,
+    /** Optional set of sized icons that the client can display in a user
+      * interface.
+      *
+      * Clients that support rendering icons MUST support at least the following
+      * MIME types:
+      *   - `image/png` - PNG images (safe, universal compatibility)
+      *   - `image/jpeg` (and `image/jpg`) - JPEG images (safe, universal
+      *     compatibility)
+      *
+      * Clients that support rendering icons SHOULD also support:
+      *   - `image/svg+xml` - SVG images (scalable but requires security
+      *     precautions)
+      *   - `image/webp` - WebP images (modern, efficient format)
+      */
+    icons: Option[Seq[mcp.Icon]] = None,
     /** Intended for UI and end-user contexts — optimized to be human-readable
       * and easily understood, even by those unfamiliar with domain-specific
       * terminology.
@@ -35,5 +57,8 @@ case class Implementation(
       * where `annotations.title` should be given precedence over using `name`,
       * if present).
       */
-    title: Option[String] = None
+    title: Option[String] = None,
+    /** An optional URL of the website for this implementation.
+      */
+    websiteUrl: Option[String] = None
 ) derives ReadWriter

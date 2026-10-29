@@ -18,14 +18,13 @@ package mcp
 
 import mcp.json.*
 
-/** This request is sent from the client to the server when it first connects,
-  * asking it to begin initialization.
+/** Controls tool selection behavior for sampling requests.
   */
-case class InitializeParams(
-    capabilities: mcp.ClientCapabilities,
-    clientInfo: mcp.Implementation,
-    /** The latest version of the Model Context Protocol that the client
-      * supports. The client MAY decide to support older versions as well.
+case class ToolChoice(
+    /** Controls the tool use ability of the model:
+      *   - "auto": Model decides whether to use tools (default)
+      *   - "required": Model MUST use at least one tool before completing
+      *   - "none": Model MUST NOT use any tools
       */
-    protocolVersion: String
+    mode: Option[String] = None
 ) derives ReadWriter

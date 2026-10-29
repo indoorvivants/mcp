@@ -18,15 +18,24 @@ package mcp
 
 import mcp.json.*
 
-/** A notification from the client to the server, informing it that the list of
-  * roots has changed. This notification should be sent whenever the client
-  * adds, removes, or modifies any root. The server should then request an
-  * updated list of roots using the ListRootsRequest.
+/** Common params for any request.
   */
-case class RootsListChangedParams(
+case class RequestParams(
     /** See [General fields:
-      * `_meta`](/specification/2025-06-18/basic/index#meta) for notes on
+      * `_meta`](/specification/2025-11-25/basic/index#meta) for notes on
       * `_meta` usage.
       */
-    _meta: Option[ujson.Obj] = None
+    _meta: Option[RequestParams._meta] = None
 ) derives ReadWriter
+
+object RequestParams:
+  case class _meta(
+      /** If specified, the caller is requesting out-of-band progress
+        * notifications for this request (as represented by
+        * notifications/progress). The value of this parameter is an opaque
+        * token that will be attached to any subsequent notifications. The
+        * receiver is not obligated to provide these notifications.
+        */
+      progressToken: Option[mcp.ProgressToken] = None
+  ) derives ReadWriter
+end RequestParams

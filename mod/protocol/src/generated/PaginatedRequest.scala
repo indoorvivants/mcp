@@ -19,15 +19,8 @@ package mcp
 import mcp.json.*
 
 case class PaginatedRequest(
+    id: mcp.RequestId,
     method: String,
-    params: Option[PaginatedRequest.Params] = None
+    jsonrpc: "2.0" = "2.0",
+    params: Option[mcp.PaginatedRequestParams] = None
 ) derives ReadWriter
-
-object PaginatedRequest:
-  case class Params(
-      /** An opaque token representing the current pagination position. If
-        * provided, the server should return results starting after this cursor.
-        */
-      cursor: Option[String] = None
-  ) derives ReadWriter
-end PaginatedRequest

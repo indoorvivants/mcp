@@ -38,6 +38,9 @@ case class ServerCapabilities(
     /** Present if the server offers any resources to read.
       */
     resources: Option[ServerCapabilities.Resources] = None,
+    /** Present if the server supports task-augmented requests.
+      */
+    tasks: Option[ServerCapabilities.Tasks] = None,
     /** Present if the server offers any tools to call.
       */
     tools: Option[ServerCapabilities.Tools] = None
@@ -51,6 +54,34 @@ object ServerCapabilities:
       listChanged: Option[Boolean] = None,
       subscribe: Option[Boolean] = None
   ) derives ReadWriter
+  case class Tasks(
+      /** Whether this server supports tasks/cancel.
+        */
+      cancel: Option[ujson.Obj] = None,
+      /** Whether this server supports tasks/list.
+        */
+      list: Option[ujson.Obj] = None,
+      /** Specifies which request types can be augmented with tasks.
+        */
+      requests: Option[Tasks.Requests] = None
+  ) derives ReadWriter
+
+  object Tasks:
+    case class Requests(
+        /** Task support for tool-related requests.
+          */
+        tools: Option[Requests.Tools] = None
+    ) derives ReadWriter
+
+    object Requests:
+      case class Tools(
+          /** Whether the server supports task-augmented tools/call requests.
+            */
+          call: Option[ujson.Obj] = None
+      ) derives ReadWriter
+    end Requests
+  end Tasks
+
   case class Tools(
       listChanged: Option[Boolean] = None
   ) derives ReadWriter

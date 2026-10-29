@@ -46,7 +46,7 @@ case class ModelPreferences(
       * The client SHOULD prioritize these hints over the numeric priorities,
       * but MAY still use the priorities to select from ambiguous matches.
       */
-    hints: Option[Seq[mcp.ModelHint]],
+    hints: Option[Seq[mcp.ModelHint]] = None,
     /** How much to prioritize intelligence and capabilities when selecting a
       * model. A value of 0 means intelligence is not important, while a value
       * of 1 means intelligence is the most important factor.

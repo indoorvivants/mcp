@@ -18,19 +18,21 @@ package mcp
 
 import mcp.json.*
 
-/** A ping, issued by either the server or the client, to check that the other
-  * party is still alive. The receiver must promptly respond, or else may be
-  * disconnected.
+/** Parameters for a `resources/read` request.
   */
-case class PingParams(
+case class ReadResourceRequestParams(
+    /** The URI of the resource. The URI can use any protocol; it is up to the
+      * server how to interpret it.
+      */
+    uri: String,
     /** See [General fields:
-      * `_meta`](/specification/2025-06-18/basic/index#meta) for notes on
+      * `_meta`](/specification/2025-11-25/basic/index#meta) for notes on
       * `_meta` usage.
       */
-    _meta: Option[PingParams._meta] = None
+    _meta: Option[ReadResourceRequestParams._meta] = None
 ) derives ReadWriter
 
-object PingParams:
+object ReadResourceRequestParams:
   case class _meta(
       /** If specified, the caller is requesting out-of-band progress
         * notifications for this request (as represented by
@@ -40,4 +42,4 @@ object PingParams:
         */
       progressToken: Option[mcp.ProgressToken] = None
   ) derives ReadWriter
-end PingParams
+end ReadResourceRequestParams

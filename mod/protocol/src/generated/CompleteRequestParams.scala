@@ -18,19 +18,24 @@ package mcp
 
 import mcp.json.*
 
-/** A request from the client to the server, to ask for completion options.
+/** Parameters for a `completion/complete` request.
   */
-case class CompleteParams(
+case class CompleteRequestParams(
     /** The argument's information
       */
-    argument: CompleteParams.Argument,
-    ref: CompleteParams.Ref,
+    argument: CompleteRequestParams.Argument,
+    ref: CompleteRequestParams.Ref,
+    /** See [General fields:
+      * `_meta`](/specification/2025-11-25/basic/index#meta) for notes on
+      * `_meta` usage.
+      */
+    _meta: Option[CompleteRequestParams._meta] = None,
     /** Additional, optional context for completions
       */
-    context: Option[CompleteParams.Context] = None
+    context: Option[CompleteRequestParams.Context] = None
 ) derives ReadWriter
 
-object CompleteParams:
+object CompleteRequestParams:
   case class Argument(
       /** The name of the argument
         */
@@ -38,6 +43,15 @@ object CompleteParams:
       /** The value of the argument to use for completion matching.
         */
       value: String
+  ) derives ReadWriter
+  case class _meta(
+      /** If specified, the caller is requesting out-of-band progress
+        * notifications for this request (as represented by
+        * notifications/progress). The value of this parameter is an opaque
+        * token that will be attached to any subsequent notifications. The
+        * receiver is not obligated to provide these notifications.
+        */
+      progressToken: Option[mcp.ProgressToken] = None
   ) derives ReadWriter
   case class Context(
       /** Previously-resolved variables in a URI template or prompt.
@@ -50,4 +64,4 @@ object CompleteParams:
       .orElse[mcp.ResourceTemplateReference]("ResourceTemplateReference")
 
   type Ref = Ref.BuilderType
-end CompleteParams
+end CompleteRequestParams

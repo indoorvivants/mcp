@@ -21,15 +21,11 @@ import mcp.json.*
 /** Describes a message issued to or received from an LLM API.
   */
 case class SamplingMessage(
-    content: SamplingMessage.Content,
-    role: mcp.Role
+    content: ujson.Value,
+    role: mcp.Role,
+    /** See [General fields:
+      * `_meta`](/specification/2025-11-25/basic/index#meta) for notes on
+      * `_meta` usage.
+      */
+    _meta: Option[ujson.Obj] = None
 ) derives ReadWriter
-
-object SamplingMessage:
-  val Content =
-    Builder[mcp.TextContent]("TextContent")
-      .orElse[mcp.ImageContent]("ImageContent")
-      .orElse[mcp.AudioContent]("AudioContent")
-
-  type Content = Content.BuilderType
-end SamplingMessage

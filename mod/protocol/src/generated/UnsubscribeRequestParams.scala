@@ -18,24 +18,21 @@ package mcp
 
 import mcp.json.*
 
-/** Sent from the server to request a list of root URIs from the client. Roots
-  * allow servers to ask for specific directories or files to operate on. A
-  * common example for roots is providing a set of repositories or directories a
-  * server should operate on.
-  *
-  * This request is typically used when the server needs to understand the file
-  * system structure or access specific locations that the client has permission
-  * to read from.
+/** Parameters for a `resources/unsubscribe` request.
   */
-case class ListRootsParams(
+case class UnsubscribeRequestParams(
+    /** The URI of the resource. The URI can use any protocol; it is up to the
+      * server how to interpret it.
+      */
+    uri: String,
     /** See [General fields:
-      * `_meta`](/specification/2025-06-18/basic/index#meta) for notes on
+      * `_meta`](/specification/2025-11-25/basic/index#meta) for notes on
       * `_meta` usage.
       */
-    _meta: Option[ListRootsParams._meta] = None
+    _meta: Option[UnsubscribeRequestParams._meta] = None
 ) derives ReadWriter
 
-object ListRootsParams:
+object UnsubscribeRequestParams:
   case class _meta(
       /** If specified, the caller is requesting out-of-band progress
         * notifications for this request (as represented by
@@ -45,4 +42,4 @@ object ListRootsParams:
         */
       progressToken: Option[mcp.ProgressToken] = None
   ) derives ReadWriter
-end ListRootsParams
+end UnsubscribeRequestParams

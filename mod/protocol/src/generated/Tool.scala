@@ -29,7 +29,7 @@ case class Tool(
       */
     name: String,
     /** See [General fields:
-      * `_meta`](/specification/2025-06-18/basic/index#meta) for notes on
+      * `_meta`](/specification/2025-11-25/basic/index#meta) for notes on
       * `_meta` usage.
       */
     _meta: Option[ujson.Obj] = None,
@@ -44,8 +44,29 @@ case class Tool(
       * available tools. It can be thought of like a "hint" to the model.
       */
     description: Option[String] = None,
+    /** Execution-related properties for this tool.
+      */
+    execution: Option[mcp.ToolExecution] = None,
+    /** Optional set of sized icons that the client can display in a user
+      * interface.
+      *
+      * Clients that support rendering icons MUST support at least the following
+      * MIME types:
+      *   - `image/png` - PNG images (safe, universal compatibility)
+      *   - `image/jpeg` (and `image/jpg`) - JPEG images (safe, universal
+      *     compatibility)
+      *
+      * Clients that support rendering icons SHOULD also support:
+      *   - `image/svg+xml` - SVG images (scalable but requires security
+      *     precautions)
+      *   - `image/webp` - WebP images (modern, efficient format)
+      */
+    icons: Option[Seq[mcp.Icon]] = None,
     /** An optional JSON Schema object defining the structure of the tool's
       * output returned in the structuredContent field of a CallToolResult.
+      *
+      * Defaults to JSON Schema 2020-12 when no explicit $schema is provided.
+      * Currently restricted to type: "object" at the root level.
       */
     outputSchema: Option[Tool.OutputSchema] = None,
     /** Intended for UI and end-user contexts — optimized to be human-readable
@@ -61,11 +82,13 @@ case class Tool(
 
 object Tool:
   case class InputSchema(
+      $schema: Option[String] = None,
       properties: Option[ujson.Obj] = None,
       required: Option[Seq[String]] = None,
       `type`: "object" = "object"
   ) derives ReadWriter
   case class OutputSchema(
+      $schema: Option[String] = None,
       properties: Option[ujson.Obj] = None,
       required: Option[Seq[String]] = None,
       `type`: "object" = "object"

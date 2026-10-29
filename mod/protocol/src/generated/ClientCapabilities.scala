@@ -25,7 +25,7 @@ import mcp.json.*
 case class ClientCapabilities(
     /** Present if the client supports elicitation from the server.
       */
-    elicitation: Option[ujson.Obj] = None,
+    elicitation: Option[ClientCapabilities.Elicitation] = None,
     /** Experimental, non-standard capabilities that the client supports.
       */
     experimental: Option[ujson.Obj] = None,
@@ -34,10 +34,66 @@ case class ClientCapabilities(
     roots: Option[ClientCapabilities.Roots] = None,
     /** Present if the client supports sampling from an LLM.
       */
-    sampling: Option[ujson.Obj] = None
+    sampling: Option[ClientCapabilities.Sampling] = None,
+    /** Present if the client supports task-augmented requests.
+      */
+    tasks: Option[ClientCapabilities.Tasks] = None
 ) derives ReadWriter
 
 object ClientCapabilities:
+  case class Elicitation(
+      form: Option[ujson.Obj] = None,
+      url: Option[ujson.Obj] = None
+  ) derives ReadWriter
   case class Roots(
       listChanged: Option[Boolean] = None
   ) derives ReadWriter
+  case class Sampling(
+      /** Whether the client supports context inclusion via includeContext
+        * parameter. If not declared, servers SHOULD only use
+        * `includeContext: "none"` (or omit it).
+        */
+      context: Option[ujson.Obj] = None,
+      /** Whether the client supports tool use via tools and toolChoice
+        * parameters.
+        */
+      tools: Option[ujson.Obj] = None
+  ) derives ReadWriter
+  case class Tasks(
+      /** Whether this client supports tasks/cancel.
+        */
+      cancel: Option[ujson.Obj] = None,
+      /** Whether this client supports tasks/list.
+        */
+      list: Option[ujson.Obj] = None,
+      /** Specifies which request types can be augmented with tasks.
+        */
+      requests: Option[Tasks.Requests] = None
+  ) derives ReadWriter
+
+  object Tasks:
+    case class Requests(
+        /** Task support for elicitation-related requests.
+          */
+        elicitation: Option[Requests.Elicitation] = None,
+        /** Task support for sampling-related requests.
+          */
+        sampling: Option[Requests.Sampling] = None
+    ) derives ReadWriter
+
+    object Requests:
+      case class Elicitation(
+          /** Whether the client supports task-augmented elicitation/create
+            * requests.
+            */
+          create: Option[ujson.Obj] = None
+      ) derives ReadWriter
+      case class Sampling(
+          /** Whether the client supports task-augmented sampling/createMessage
+            * requests.
+            */
+          createMessage: Option[ujson.Obj] = None
+      ) derives ReadWriter
+    end Requests
+  end Tasks
+end ClientCapabilities
