@@ -25,7 +25,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 
-import scala.util.Try
+import scala.util.control.NonFatal
 
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpHandler
@@ -120,62 +120,63 @@ class HttpTransport private (opts: HttpTransport.Opts) extends Transport[Unit]:
             respondEmpty(exchange, 405)
           case _ => respondEmpty(exchange, 405)
       catch
-        case e: Throwable =>
+        case NonFatal(e) =>
           log(s"Unhandled error: ${e.getMessage}")
-          Try(respondEmpty(exchange, 500))
+          try respondEmpty(exchange, 500)
+          catch case NonFatal(_) => ()
       finally exchange.close()
     end handle
 
     private def handlePost(exchange: HttpExchange): Unit =
-      if !checkOrigin(exchange) then
-        respondEmpty(exchange, 403)
-        return
+      if !checkOrigin(exchange) then respondEmpty(exchange, 403)
+      else
+        val headers = exchange.getRequestHeaders
+        val accept = Option(headers.getFirst("Accept")).getOrElse("")
 
-      val headers = exchange.getRequestHeaders
-
-      val accept =
-        Option(headers.getFirst("Accept")).getOrElse("")
-      if !(accept.contains("application/json") && accept.contains("text/event-stream")) then
-        respondEmpty(exchange, 406)
-        return
-
-      val bodyStr =
-        new String(exchange.getRequestBody.readAllBytes(), StandardCharsets.UTF_8)
-      val json =
-        try read[ujson.Obj](bodyStr)
-        catch
-          case e: Throwable =>
-            log(s"Failed to parse body: ${e.getMessage}")
-            respondEmpty(exchange, 400)
-            return
-
-      val method = json.value.get("method").map(_.str)
-
-      // MCP-Protocol-Version enforcement (skip for the initialize request)
-      if !method.contains(InitializeMethod) then
-        val v = Option(headers.getFirst("MCP-Protocol-Version"))
-          .getOrElse(BuildInfo.mcpProtocolVersion)
-        if v != BuildInfo.mcpProtocolVersion then
-          log(s"MCP protocol version ${v} is not supported")
-          respondEmpty(exchange, 400)
-          return
-
-      // Session enforcement (skip for the initialize request)
-      val sessionHeader = Option(headers.getFirst("Mcp-Session-Id"))
-      val session: Option[Session] =
-        if method.contains(InitializeMethod) then None
+        if !(accept.contains("application/json") && accept.contains("text/event-stream"))
+        then respondEmpty(exchange, 406)
         else
-          sessionHeader match
-            case None =>
+          val bodyStr = new String(
+            exchange.getRequestBody.readAllBytes(),
+            StandardCharsets.UTF_8
+          )
+          try dispatch(exchange, headers, read[ujson.Obj](bodyStr))
+          catch
+            case NonFatal(e) =>
+              log(s"Failed to parse body: ${e.getMessage}")
               respondEmpty(exchange, 400)
-              return
-            case Some(sid) =>
-              val s = sessions.get(sid)
-              if s == null then
-                respondEmpty(exchange, 404)
-                return
-              Some(s)
+    end handlePost
 
+    private def dispatch(
+        exchange: HttpExchange,
+        headers: com.sun.net.httpserver.Headers,
+        json: ujson.Obj
+    ): Unit =
+      val method = json.value.get("method").map(_.str)
+      val isInitialize = method.contains(InitializeMethod)
+
+      val protocolOk =
+        isInitialize || Option(headers.getFirst("MCP-Protocol-Version"))
+          .getOrElse(BuildInfo.mcpProtocolVersion) == BuildInfo.mcpProtocolVersion
+
+      if !protocolOk then
+        log(s"Unsupported MCP protocol version")
+        respondEmpty(exchange, 400)
+      else
+        val sessionResult: Either[Int, Option[Session]] =
+          if isInitialize then Right(None)
+          else
+            Option(headers.getFirst("Mcp-Session-Id"))
+              .toRight(400)
+              .flatMap: sid =>
+                Option(sessions.get(sid)).map(Some(_)).toRight(404)
+
+        sessionResult match
+          case Left(status) => respondEmpty(exchange, status)
+          case Right(_)     => handleRpc(exchange, json)
+    end dispatch
+
+    private def handleRpc(exchange: HttpExchange, json: ujson.Obj): Unit =
       given ServerToClient[Id] = noopServerToClient
 
       val hasId = json.value.contains("id")
@@ -198,13 +199,12 @@ class HttpTransport private (opts: HttpTransport.Opts) extends Transport[Unit]:
                 )
               case Some(handler) =>
                 handler(params) match
-                  case err: Error       => Response(id, error = Some(err))
-                  case r: ujson.Value   => Response(id, result = Some(writeJs(r)))
+                  case err: Error     => Response(id, error = Some(err))
+                  case r: ujson.Value => Response(id, result = Some(writeJs(r)))
 
           val obj = writeJs(response)
           obj("jsonrpc") = "2.0"
 
-          // If it was initialize, allocate a new session
           if m == InitializeMethod then
             val sid = UUID.randomUUID().toString
             sessions.put(sid, new Session(sid))
@@ -213,34 +213,29 @@ class HttpTransport private (opts: HttpTransport.Opts) extends Transport[Unit]:
           respondJson(exchange, 200, dropNulls(obj))
 
         case (false, true) =>
-          // notification
           val m = json.value("method").str
           val params = json.value.getOrElse("params", ujson.Obj())
-          endpoints.notificationHandlers.get(m) match
-            case None        => ()
-            case Some(value) => Try(value(params))
+          endpoints.notificationHandlers.get(m).foreach: h =>
+            try h(params)
+            catch case NonFatal(e) => log(s"Notification handler $m failed: ${e.getMessage}")
           respondEmpty(exchange, 202)
 
         case (true, false) =>
-          // response to a prior server-initiated request — not supported here,
-          // but accept gracefully
           respondEmpty(exchange, 202)
 
         case _ =>
           respondEmpty(exchange, 400)
-      end match
-    end handlePost
+    end handleRpc
 
     private def handleDelete(exchange: HttpExchange): Unit =
-      if !checkOrigin(exchange) then
-        respondEmpty(exchange, 403)
-        return
-      Option(exchange.getRequestHeaders.getFirst("Mcp-Session-Id")) match
-        case None => respondEmpty(exchange, 400)
-        case Some(sid) =>
-          val removed = sessions.remove(sid)
-          if removed == null then respondEmpty(exchange, 404)
-          else respondEmpty(exchange, 204)
+      if !checkOrigin(exchange) then respondEmpty(exchange, 403)
+      else
+        Option(exchange.getRequestHeaders.getFirst("Mcp-Session-Id")) match
+          case None => respondEmpty(exchange, 400)
+          case Some(sid) =>
+            Option(sessions.remove(sid)) match
+              case None    => respondEmpty(exchange, 404)
+              case Some(_) => respondEmpty(exchange, 204)
     end handleDelete
 
     private def checkOrigin(exchange: HttpExchange): Boolean =
@@ -254,7 +249,7 @@ class HttpTransport private (opts: HttpTransport.Opts) extends Transport[Unit]:
     catch
       case e: TraceException =>
         Response(id, error = Some(Error(ErrorCode.InvalidRequest, e.getMessage)))
-      case e: Throwable =>
+      case NonFatal(e) =>
         Response(id, error = Some(Error(ErrorCode.InternalError, e.getMessage)))
 
   private def dropNulls(v: ujson.Value): ujson.Value =
@@ -301,7 +296,7 @@ object HttpTransport:
 
   private def defaultExecutor(): Executor =
     try Executors.newVirtualThreadPerTaskExecutor()
-    catch case _: Throwable => Executors.newCachedThreadPool()
+    catch case NonFatal(_) => Executors.newCachedThreadPool()
 
   val default: HttpTransport = new HttpTransport(
     Opts(
